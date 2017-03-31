@@ -1,0 +1,12 @@
+arc,3
+go,2
+gospd,2
+move,3
+trvl,2
+turn,2
+spd,0
+head,0
+dist,0
+rst,0
+hwver,0
+ver,0
