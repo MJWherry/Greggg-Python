@@ -1,6 +1,7 @@
-import serial
-import os
 import logging
+import os
+
+import serial
 from termcolor import colored
 
 
@@ -105,10 +106,10 @@ class MotorController:
             cfg = False
             cfg_file = open('info/Config.txt', 'r')
             for line in cfg_file:
-                if line == '[Motor]':
+                if line.rstrip() == '[Motor]':
                     cfg = True
                     continue
-                elif line == '[/Motor]':
+                elif line.rstrip() == '[/Motor]':
                     break
                 if cfg:
                     word_list = line.split('=')

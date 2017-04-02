@@ -27,8 +27,9 @@ serial_port=/dev/ttyS0
 [Compass]
 i2c_port=1
 i2c_bus_address=0x1E
-declination=0,0
+declination=-9,23
 gauss=1.3
+update_time_interval=0.2
 [/Compass]
 
 

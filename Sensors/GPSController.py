@@ -1,9 +1,9 @@
 import logging
 import os
+import threading
+
 import pynmea2
 import serial
-import threading
-import time
 from termcolor import colored
 
 
@@ -88,14 +88,15 @@ class GPSController:
     def start_gps_thread(self):
         self.thread.start()
 
-    def sonar_thread_running(self):
+    def gps_thread_running(self):
+        if self.thread is None: return False
         return threading.Thread.isAlive(self.thread)
 
-    def stop_sonar_thread(self):
+    def stop_gps_thread(self):
         None
         # Implement
 
-    def restart_sonar_thread(self):
+    def restart_gps_thread(self):
         None
         # Implement
 
@@ -130,10 +131,10 @@ class GPSController:
             cfg_file = open('info/Config.txt', 'r')
             cfg = False
             for line in cfg_file:
-                if line == '[GPS]':
+                if line.rstrip() == '[GPS]':
                     cfg = True
                     continue
-                elif line == '[/GPS]':
+                elif line.rstrip() == '[/GPS]':
                     break
                 if cfg:
                     word_list = line.split('=')
@@ -146,6 +147,11 @@ class GPSController:
 
     def save_settings(self):
         None
+
+    def print_settings(self):
+        print 'SERIAL SETTINGS'
+        print 'PORT: ', self.serial_port
+        print 'BAUD RATE: ', self.serial_baud_rate
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

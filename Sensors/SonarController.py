@@ -1,10 +1,12 @@
-import time
-import threading
-import os
 import logging
-import RPi.GPIO as GPIO #
+import os
+import threading
+import time
+
+# import RPi.GPIO as GPIO #
 from termcolor import colored
 
+GPIO = None
 
 class SonarController:
     # region Variables
@@ -14,6 +16,7 @@ class SonarController:
     front_middle_sonar_pin = 0
     front_right_sonar_pin = 0
     middle_back_sonar_pin = 0
+    ping_time_interval = 0
     # endregion
 
     # region Distances
@@ -125,7 +128,8 @@ class SonarController:
         self.thread = threading.Thread(target=self.run, args=())
         # FIND A WAY TO TEST PINS
         try:
-            GPIO.setmode(GPIO.BOARD)
+            None
+            # GPIO.setmode(GPIO.BOARD)
         except:
             logging.error('Couldn\'t set GPIO mode')
 
@@ -149,10 +153,10 @@ class SonarController:
             cfg = False
             cfg_file = open('info/Config.txt', 'r')
             for line in cfg_file:
-                if line == '[Sonar]':
+                if line.rstrip() == '[Sonar]':
                     cfg = True
                     continue
-                elif line == '[/Sonar]':
+                elif line.rstrip() == '[/Sonar]':
                     break
                 if cfg:
                     word_list = line.split('=')
@@ -173,6 +177,15 @@ class SonarController:
         cfg_file.writelines(('front_middle_sonar_pin=', self.front_middle_sonar_pin))
         cfg_file.writelines(('front_right_sonar_pin=', self.front_right_sonar_pin))
         cfg_file.writelines(('middle_back_sonar_pin=', self.middle_back_sonar_pin))
+
+    def print_settings(self):
+        print 'PINOUTS'
+        print 'FRONT LEFT: ', self.front_left_sonar_pin
+        print 'FRONT MIDDLE: ', self.front_middle_sonar_pin
+        print 'FRONT RIGHT: ', self.front_right_sonar_pin
+        print 'MIDDLE BACK: ', self.middle_back_sonar_pin
+        print '\nOTHER SETTINGS'
+        print 'PING TIME INTERVAL: ', self.ping_time_interval
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

@@ -1,12 +1,13 @@
 import os
 import threading
-import bluetooth
-import time
-import logging
-import Motors.MotorController
-import Sensors.SonarController, Sensors.GPSController, Sensors.CompassController
 
+import bluetooth
 from termcolor import colored
+
+import Motors.MotorController
+import Sensors.CompassController
+import Sensors.GPSController
+import Sensors.SonarController
 
 
 # hciconfig -a  : get bluetooth device id, needed for client
@@ -44,12 +45,12 @@ class Server():
 
     # endregion
 
-    def __init__(self, motor, sonar, gps):
+    def __init__(self, motor, sonar, gps, compass):
         # assign to controllers passed.
         self.mc = motor
         self.sc = sonar
         self.gc = gps
-        # self.cc = compass
+        self.cc = compass
 
         print 'Starting server'
 

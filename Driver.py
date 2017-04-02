@@ -1,10 +1,10 @@
 import os
-import logging
+
 from termcolor import colored
 
 from Bluetooth import Server
 from Motors import MotorController
-from Sensors import SonarController, GPSController
+from Sensors import SonarController, GPSController, CompassController
 
 
 class Driver:
@@ -19,6 +19,7 @@ class Driver:
     mc = None
     sc = None
     gc = None
+    cc = None
     server = None
 
     # endregion
@@ -35,12 +36,17 @@ class Driver:
         self.mc = MotorController.MotorController()
         self.sc = SonarController.SonarController()
         self.gc = GPSController.GPSController()
-        self.server = Server.Server(self.mc, self.sc, self.gc)
+        self.cc = CompassController.CompassController()
+
+        self.server = Server.Server(self.mc, self.sc, self.gc, self.cc)
 
         # Start the appropiate threads automatically
-        self.sc.start_sonar_thread()
-        self.gc.StartGPSThread()
-        self.server.StartServerThread()
+        # self.sc.start_sonar_thread()
+        # self.gc.start_gps_thread()
+        # self.cc.start_compass_thread()
+
+        # self.server.StartServerThread()
+
 
         # Start the terminal
         self.terminal()
@@ -72,7 +78,7 @@ class Driver:
                                         colored('RUNNING', 'green') if self.sc.sonar_thread_running() else colored(
                                             'NOT RUNNING', 'red'), colored('|', 'magenta'))
         print ' {} {} {:<47} {}'.format(colored('|', 'magenta'), colored('GPS THREAD:', 'white'),
-                                        colored('RUNNING', 'green') if self.gc.GPSThreadRunning() else colored(
+                                        colored('RUNNING', 'green') if self.gc.gps_thread_running() else colored(
                                             'NOT RUNNING', 'red'), colored('|', 'magenta'))
         print ' {} {} {:<43} {}'.format(colored('|', 'magenta'), colored('COMPASS THREAD:', 'white'),
                                         colored('RUNNING', 'green') if False else colored('NOT RUNNING', 'red'),
@@ -95,20 +101,17 @@ class Driver:
         elif cmd == 'sct':
             self.sc.terminal(), self.run_terminal_command('c')
         elif cmd == 'gct':
-            self.gc.Terminal(), self.run_terminal_command('c')
+            self.gc.terminal(), self.run_terminal_command('c')
+        elif cmd == 'cct':
+            self.cc.terminal(), self.run_terminal_command('c')
 
-        elif cmd == '4':
-            self.sc.start_sonar_thread(), self.run_terminal_command('c')
-        elif cmd == '5':
-            self.gc.StartGPSThread(), self.run_terminal_command('c')
-        elif cmd == '6':
-            self.sc.PrintDistances()
-        elif cmd == '7':
-            self.gc.PrintData()
-        elif cmd == '8':
-            self.server.StartServerThread(), self.run_terminal_command('c')
-        elif cmd == '88':
-            self.server.StopServerThread()
+        elif cmd == '1':
+            self.sc.print_settings()
+        elif cmd == '2':
+            self.gc.print_settings()
+        elif cmd == '3':
+            self.cc.print_settings()
+
         elif cmd == 'c':
             os.system(self.clear), self.print_menu()
         elif cmd == 'q':
