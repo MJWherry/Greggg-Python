@@ -146,16 +146,22 @@ class SonarController:
         # Settings
         logging.info('Loading settings for the sonar controller.')
         try:
-            cfg_file = open('info/Sonar/Config.txt', 'r')
+            cfg = False
+            cfg_file = open('info/Config.txt', 'r')
             for line in cfg_file:
-
-                word_list = line.split('=')
-                if word_list[0] == 'ping_time_interval': self.ping_time_interval = float(word_list[1].rstrip())
-                elif word_list[0] == 'front_left_sonar_pin': self.front_left_sonar_pin = int(word_list[1].rstrip())
-                elif word_list[0] == 'front_middle_sonar_pin': self.front_middle_sonar_pin = int(word_list[1].rstrip())
-                elif word_list[0] == 'front_right_sonar_pin': self.front_right_sonar_pin = int(word_list[1].rstrip())
-                elif word_list[0] == 'middle_back_sonar_pin': self.middle_back_sonar_pin = int(word_list[1].rstrip())
-                else: logging.info('Invalid line in sonar config file: ',line)
+                if line == '[Sonar]':
+                    cfg = True
+                    continue
+                elif line == '[/Sonar]':
+                    break
+                if cfg:
+                    word_list = line.split('=')
+                    if word_list[0] == 'ping_time_interval': self.ping_time_interval = float(word_list[1].rstrip())
+                    elif word_list[0] == 'front_left_sonar_pin': self.front_left_sonar_pin = int(word_list[1].rstrip())
+                    elif word_list[0] == 'front_middle_sonar_pin': self.front_middle_sonar_pin = int(word_list[1].rstrip())
+                    elif word_list[0] == 'front_right_sonar_pin': self.front_right_sonar_pin = int(word_list[1].rstrip())
+                    elif word_list[0] == 'middle_back_sonar_pin': self.middle_back_sonar_pin = int(word_list[1].rstrip())
+                    else: logging.info('Invalid line in sonar config file: ',line)
             cfg_file.close()
         except:
             logging.error('Could not load the sonar controller config file.')

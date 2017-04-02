@@ -102,15 +102,22 @@ class MotorController:
         # Settings
         logging.info('Loading  settings for the motor controller.')
         try:
-            cfg_file = open('info/Motor/Config.txt', 'r')
+            cfg = False
+            cfg_file = open('info/Config.txt', 'r')
             for line in cfg_file:
-                word_list = line.split('=')
-                if word_list[0] == 'serial_baud_rate':
-                    self.serial_baud_rate = word_list[1].rstrip()
-                elif word_list[0] == 'serial_port':
-                    self.serial_port = word_list[1].rstrip()
-                else:
-                    logging.info('Invalid line in motor config file: ', line)
+                if line == '[Motor]':
+                    cfg = True
+                    continue
+                elif line == '[/Motor]':
+                    break
+                if cfg:
+                    word_list = line.split('=')
+                    if word_list[0] == 'serial_baud_rate':
+                        self.serial_baud_rate = word_list[1].rstrip()
+                    elif word_list[0] == 'serial_port':
+                        self.serial_port = word_list[1].rstrip()
+                    else:
+                        logging.info('Invalid line in motor config file: ', line)
             cfg_file.close()
         except:
             logging.error('Could not load the motor controller command file.')
