@@ -111,6 +111,8 @@ class Driver:
             self.gc.print_settings()
         elif cmd == '3':
             self.cc.print_settings()
+        elif cmd == '4':
+            self.mc.print_settings()
 
         elif cmd == 'c':
             os.system(self.clear), self.print_menu()

@@ -129,6 +129,8 @@ class CompassController:
                     break
                 if cfg:
                     word_list = line.split('=')
+                    word_list[0] = word_list[0].rstrip()
+                    word_list[1] = word_list[1].rstrip()
                     if word_list[0] == 'i2c_port':
                         self.i2c_port = int(word_list[1].rstrip())
                     elif word_list[0] == 'i2c_bus_address':
@@ -149,10 +151,11 @@ class CompassController:
         None
 
     def print_settings(self):
-        print 'I2C SETTINGS'
-        print 'I2C port: ', self.i2c_port
-        print 'I2C bus address: ', self.i2c_bus_address
-        print '\nCOMPASS SETTINGS'
+        print 'COMPASS CONTROLLER SETTINGS'
+        print 'I2C Specific'
+        print 'Port: ', self.i2c_port
+        print 'Bus Address: ', self.i2c_bus_address
+        print '\nCompass Specific'
         print 'Declination: ', self.declination
         print 'Gauss: ', self.gauss
 

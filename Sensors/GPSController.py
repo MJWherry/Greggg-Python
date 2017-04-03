@@ -138,6 +138,8 @@ class GPSController:
                     break
                 if cfg:
                     word_list = line.split('=')
+                    word_list[0] = word_list[0].rstrip()
+                    word_list[1] = word_list[1].rstrip()
                     if word_list[0] == 'serial_port': self.serial_port = word_list[1].rstrip()
                     elif word_list[0] == 'serial_baud_rate': self.serial_baud_rate = word_list[1].rstrip()
                     else: logging.info('Invalid line in GPS config file: ', line)
@@ -149,9 +151,9 @@ class GPSController:
         None
 
     def print_settings(self):
-        print 'SERIAL SETTINGS'
-        print 'PORT: ', self.serial_port
-        print 'BAUD RATE: ', self.serial_baud_rate
+        print 'GPS CONTROLLER SETTINGS'
+        print 'Serial Port: ', self.serial_port
+        print 'Serial Baud Rate: ', self.serial_baud_rate
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

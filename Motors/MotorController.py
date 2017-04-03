@@ -113,6 +113,8 @@ class MotorController:
                     break
                 if cfg:
                     word_list = line.split('=')
+                    word_list[0] = word_list[0].rstrip()
+                    word_list[1] = word_list[1].rstrip()
                     if word_list[0] == 'serial_baud_rate':
                         self.serial_baud_rate = word_list[1].rstrip()
                     elif word_list[0] == 'serial_port':
@@ -125,6 +127,11 @@ class MotorController:
 
     def save_settings(self):
         None
+
+    def print_settings(self):
+        print 'MOTOR CONTROLLER SETTINGS'
+        print 'Serial Port: ', self.serial_port
+        print 'Serial Baud Rate: ', self.serial_baud_rate
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

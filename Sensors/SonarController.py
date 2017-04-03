@@ -160,6 +160,8 @@ class SonarController:
                     break
                 if cfg:
                     word_list = line.split('=')
+                    word_list[0] = word_list[0].rstrip()
+                    word_list[1] = word_list[1].rstrip()
                     if word_list[0] == 'ping_time_interval': self.ping_time_interval = float(word_list[1].rstrip())
                     elif word_list[0] == 'front_left_sonar_pin': self.front_left_sonar_pin = int(word_list[1].rstrip())
                     elif word_list[0] == 'front_middle_sonar_pin': self.front_middle_sonar_pin = int(word_list[1].rstrip())
@@ -179,13 +181,14 @@ class SonarController:
         cfg_file.writelines(('middle_back_sonar_pin=', self.middle_back_sonar_pin))
 
     def print_settings(self):
-        print 'PINOUTS'
-        print 'FRONT LEFT: ', self.front_left_sonar_pin
-        print 'FRONT MIDDLE: ', self.front_middle_sonar_pin
-        print 'FRONT RIGHT: ', self.front_right_sonar_pin
-        print 'MIDDLE BACK: ', self.middle_back_sonar_pin
-        print '\nOTHER SETTINGS'
-        print 'PING TIME INTERVAL: ', self.ping_time_interval
+        print 'SONAR CONTROLLER SETTINGS'
+        print 'Pinouts'
+        print 'Front left: ', self.front_left_sonar_pin
+        print 'Front middle: ', self.front_middle_sonar_pin
+        print 'Front right: ', self.front_right_sonar_pin
+        print 'Middle back: ', self.middle_back_sonar_pin
+        print 'Etc Settings'
+        print 'Update time interval: ', self.ping_time_interval
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
