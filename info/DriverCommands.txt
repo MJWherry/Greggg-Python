@@ -1,5 +1,0 @@
-MCT,Enter the motor control terminal.
-SCT,Enter the sonar control terminal.
-GCT,Enter the GPS control terminal.
-C,Clear the screen.
-Q,Exit the terminal.

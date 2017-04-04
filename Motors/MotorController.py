@@ -78,25 +78,23 @@ class MotorController:
         self.connect()
 
     def load_settings(self):
-        try:
-            tree = ET.parse('config.xml')
-            root = tree.getroot()
-            device = root.find('motor')
+        tree = ET.parse('config.xml')
+        root = tree.getroot()
+        device = root.find('motor')
 
-            for child in device.iter('hardware_commands'):
-                for command in child.iter('command'):
-                    self.valid_motor_commands.append((command.attrib['name'], command.attrib['parameter_count']))
-                    self.valid_motor_commands2.append(command.attrib['name'])
+        for child in device.iter('hardware_commands'):
+            for command in child.iter('command'):
+                self.valid_motor_commands.append((command.attrib['name'], command.attrib['parameter_count']))
+                self.valid_motor_commands2.append(command.attrib['name'])
 
-            for child in device.iter('terminal_commands'):
-                for command in child.iter('command'):
-                    self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
+        for child in device.iter('terminal_commands'):
+            for command in child.iter('command'):
+                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
 
-            for child in device.iter('setting'):
-                if child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
-                elif child.attrib['name'] == 'serial_port': self.serial_port = child.attrib['value']
-        except:
-            None
+        for child in device.iter('setting'):
+            if child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
+            elif child.attrib['name'] == 'serial_port': self.serial_port = child.attrib['value']
+
 
     def save_settings(self):
         None

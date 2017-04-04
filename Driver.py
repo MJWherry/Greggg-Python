@@ -1,7 +1,7 @@
 import os
 
 from termcolor import colored
-
+import xml.etree.ElementTree as ET
 from Bluetooth import Server
 from Motors import MotorController
 from Sensors import SonarController, GPSController, CompassController
@@ -11,7 +11,7 @@ class Driver:
     # region VARIABLES
 
     # region ETC VARIABLES
-    commands = []
+    valid_terminal_commands = []
     clear = 'cls' if os.name == 'nt' else 'clear'
     # endregion
 
@@ -52,11 +52,12 @@ class Driver:
         self.terminal()
 
     def load_settings(self):
-        c_file = open('info/DriverCommands.txt', 'r')
-        for line in c_file:
-            word_list = line.split(',')
-            self.commands.append((word_list[0], word_list[1].rstrip()))
-        c_file.close()
+        tree = ET.parse('config.xml')
+        root = tree.getroot()
+        device = root.find('driver')
+        for child in device.iter('terminal_commands'):
+            for command in child.iter('command'):
+                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
 
     def print_menu(self):
         print colored(' {:_^54}'.format(''), 'magenta')
@@ -86,7 +87,7 @@ class Driver:
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
                                    colored('|', 'magenta'))
-        for command in self.commands:
+        for command in self.valid_terminal_commands:
             if len(command[0]) is 1:
                 print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(command[0], 'white'), command[1],
                                                       colored('|', 'magenta'))

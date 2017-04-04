@@ -40,11 +40,6 @@ class SonarController:
 
     # region Accessors/Mutators/Printers
 
-    # region Mutators
-    def set_update_time_interval(self, seconds):
-        self.update_time_interval = seconds
-    # endregion
-
     # region Accessors
     def get_update_time_interval(self):
         return self.update_time_interval
@@ -63,6 +58,11 @@ class SonarController:
 
     def get_middle_back_sonar_distance(self):
         return self.middle_back_sonar_distance
+    # endregion
+
+    # region Mutators
+    def set_update_time_interval(self, seconds):
+        self.update_time_interval = seconds
     # endregion
 
     # region Printers
