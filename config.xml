@@ -33,6 +33,7 @@
             <command name="SCT" description="Enter the sonar control terminal."/>
             <command name="GCT" description="Enter the gps control terminal."/>
             <command name="CCT" description="Enter the compass control terminal."/>
+            <command name="BCT" description="Enter the bluetooth server control terminal."/>
             <command name="H" description="Toggle visual of menu."/>
             <command name="C" description="Clear the screen."/>
             <command name="Q" description="Exit the terminal."/>
@@ -118,10 +119,15 @@
             <setting name="server_in_byte_size" value="1024"/>
             <setting name="server_out_port" value="1"/>
             <setting name="server_in_port" value="2"/>
+            <setting name="server_backlog" value="1"/>
         </settings>
         <hardware_commands>
         </hardware_commands>
-        <software_commands>
-        </software_commands>
+        <terminal_commands>
+            <command name="H" description="Toggle visual of menu."/>
+            <command name="R" description="Return to the main terminal."/>
+            <command name="C" description="Clear the screen."/>
+            <command name="Q" description="Exit the terminal."/>
+        </terminal_commands>
     </bluetooth>
 </Config>

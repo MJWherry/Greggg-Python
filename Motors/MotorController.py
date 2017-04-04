@@ -10,8 +10,8 @@ class MotorController:
 
     # region Motor Variables
     serial = None
-    serial_baud_rate = None
-    serial_port = None
+    serial_baud_rate = 0
+    serial_port = ''
     # endregion
 
     # region ETC Variables
@@ -25,7 +25,9 @@ class MotorController:
 
     # endregion
 
-    # region Accessors/Mutators
+    # region Accessors/Mutators/Printers
+
+    # region Accessors
     def get_serial(self):
         return self.serial
 
@@ -34,19 +36,27 @@ class MotorController:
 
     def get_serial_baud_rate(self):
         return self.serial_baud_rate
+    # endregion
 
+    # region Mutators
     def set_serial_port(self, port):
         self.serial_port = port
 
     def set_serial_baud_rate(self, baud_rate):
         self.serial_baud_rate = baud_rate
+    # endregion
 
-    def is_connected(self):
-        if self.serial is None: return False
-        return True
+    # region Printers
+    def print_serial_port(self):
+        print 'Serial port: ', self.serial_port
+    # endregion
+
     # endregion
 
     # region Motor functions
+    def is_connected(self):
+        return False if self.serial is None or self.serial.closed else True
+
     def connect(self):
         logging.info('Trying to connect to the motor hardware.')
         try:

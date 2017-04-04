@@ -67,7 +67,38 @@ class SonarController:
 
     # region Printers
     def print_update_time_interval(self):
-        print 'Update time interval: ', self.update_time_interval
+        print ' {:<25} {:<15}'.format('Update time interval:', self.update_time_interval)
+
+    def print_front_left_sonar_pin(self):
+        print ' {:<25} {:<15}'.format('Front left sonar pin:', self.front_left_sonar_pin)
+
+    def print_front_middle_sonar_pin(self):
+        print ' {:<25} {:<15}'.format('Front middle sonar pin:', self.front_middle_sonar_pin)
+
+    def print_front_right_sonar_pin(self):
+        print ' {:<25} {:<15}'.format('Front right sonar pin:', self.front_right_sonar_pin)
+
+    def print_middle_back_sonar_pin(self):
+        print ' {:<25} {:<15}'.format('Middle back sonar pin:', self.middle_back_sonar_pin)
+
+    def print_front_left_sonar_distance(self):
+        print ' {:<25} {:<15}'.format('Front left sonar distance:', self.front_left_sonar_distance)
+
+    def print_front_middle_sonar_distance(self):
+        print ' {:<25} {:<15}'.format('Front middle sonar distance:', self.front_middle_sonar_distance)
+
+    def print_front_right_sonar_distance(self):
+        print ' {:<25} {:<15}'.format('Front right sonar distance:', self.front_right_sonar_distance)
+
+    def print_middle_back_sonar_distance(self):
+        print ' {:<25} {:<15}'.format('Middle back sonar distance:', self.middle_back_sonar_distance)
+
+    def print_all_sonar_distances(self):
+        self.print_front_left_sonar_distance()
+        self.print_front_middle_sonar_distance()
+        self.print_front_right_sonar_distance()
+        self.print_middle_back_sonar_distance()
+
     # endregion
 
     # endregion
@@ -93,15 +124,6 @@ class SonarController:
         duration = end_time - start_time
         distance = ((duration * 34000 / 2)* 0.3937)
         return distance
-
-    def print_sonar_distances(self):
-        """
-        Prints all the distances for all the sonars
-        """
-        print ' {:<6} {:<7} {:<15} {}'.format('Front', 'Left:', self.front_left_sonar_distance, 'inches.')
-        print ' {:<6} {:<7} {:<15} {}'.format('Front', 'Middle:', self.front_middle_sonar_distance, 'inches.')
-        print ' {:<6} {:<7} {:<15} {}'.format('Front', 'Right:', self.front_right_sonar_distance, 'inches.')
-        print ' {:<6} {:<7} {:<15} {}'.format('Middle', 'Back:', self.middle_back_sonar_distance, 'inches.')
 
     # endregion
 
@@ -169,14 +191,12 @@ class SonarController:
         cfg_file.writelines(('middle_back_sonar_pin=', self.middle_back_sonar_pin))
 
     def print_settings(self):
-        print 'SONAR CONTROLLER SETTINGS'
-        print 'Pinouts'
-        print 'Front left: ', self.front_left_sonar_pin
-        print 'Front middle: ', self.front_middle_sonar_pin
-        print 'Front right: ', self.front_right_sonar_pin
-        print 'Middle back: ', self.middle_back_sonar_pin
-        print 'Etc Settings'
-        print 'Update time interval: ', self.update_time_interval
+        print ' SONAR CONTROLLER SETTINGS'
+        self.print_update_time_interval()
+        self.print_front_left_sonar_pin()
+        self.print_front_middle_sonar_pin()
+        self.print_front_right_sonar_pin()
+        self.print_middle_back_sonar_pin()
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

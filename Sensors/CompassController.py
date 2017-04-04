@@ -11,17 +11,16 @@ class CompassController:
     # region Variables
 
     # region I2C settings
-    i2c_port = None
-    i2c_bus_address = None
+    i2c_port = 0
+    i2c_bus_address = 0x00
     # endregion
 
     # region Compass settings
     # compass = hmc5883l
-
-    gauss = None
+    gauss = 0
     declination = (0, 0)
-    declination_minutes=0
-    declination_degrees=0
+    declination_minutes = 0
+    declination_degrees = 0
     update_time_interval = 0
     current_heading = None
     # endregion

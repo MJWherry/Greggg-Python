@@ -2,7 +2,7 @@ import os
 
 from termcolor import colored
 import xml.etree.ElementTree as ET
-from Bluetooth import Server
+from Bluetooth import ServerController
 from Motors import MotorController
 from Sensors import SonarController, GPSController, CompassController
 
@@ -38,7 +38,7 @@ class Driver:
         self.gc = GPSController.GPSController()
         self.cc = CompassController.CompassController()
 
-        # self.server = Server.Server(self.mc, self.sc, self.gc, self.cc)
+        self.server = ServerController.ServerController(self.mc, self.sc, self.gc, self.cc)
 
         # Start the appropiate threads automatically
         # self.sc.start_sonar_thread()
@@ -105,6 +105,8 @@ class Driver:
             self.gc.terminal(), self.run_terminal_command('c')
         elif cmd == 'cct':
             self.cc.terminal(), self.run_terminal_command('c')
+        elif cmd == 'bct':
+            self.server.terminal(), self.run_terminal_command('c')
 
         elif cmd == '1':
             self.sc.print_settings()
@@ -115,7 +117,7 @@ class Driver:
         elif cmd == '4':
             self.mc.print_settings()
         elif cmd == '5':
-            self.gc.test_print_loop()
+            self.server.print_settings()
 
         elif cmd == 'c':
             os.system(self.clear), self.print_menu()

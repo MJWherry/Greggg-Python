@@ -13,9 +13,9 @@ class GPSController:
 
     # region Serial variables
     serial_stream = None
-    serial_data = None
-    serial_port = None
-    serial_baud_rate = None
+    serial_data = ''
+    serial_port = ''
+    serial_baud_rate = 0
     # endregion
 
     # region GPS variables
