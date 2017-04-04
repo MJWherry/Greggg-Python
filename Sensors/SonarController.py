@@ -2,8 +2,9 @@ import logging
 import os
 import threading
 import time
+import xml.etree.ElementTree as ET
 
-# import RPi.GPIO as GPIO #
+#import RPi.GPIO as GPIO #
 from termcolor import colored
 
 GPIO = None
@@ -16,7 +17,7 @@ class SonarController:
     front_middle_sonar_pin = 0
     front_right_sonar_pin = 0
     middle_back_sonar_pin = 0
-    ping_time_interval = 0
+    update_time_interval = 0
     # endregion
 
     # region Distances
@@ -37,12 +38,16 @@ class SonarController:
 
     # endregion
 
-    # region Accessors/Mutators
-    def set_ping_time_interval(self, seconds):
-        self.ping_time_interval = seconds
+    # region Accessors/Mutators/Printers
 
-    def get_ping_time_interval(self):
-        return self.ping_time_interval
+    # region Mutators
+    def set_update_time_interval(self, seconds):
+        self.update_time_interval = seconds
+    # endregion
+
+    # region Accessors
+    def get_update_time_interval(self):
+        return self.update_time_interval
 
     def get_all_sonar_sensor_distances(self):
         return self.front_middle_sonar_distance, ',', self.front_left_sonar_distance, ',', self.middle_back_sonar_distance, ',', self.front_right_sonar_distance
@@ -58,6 +63,12 @@ class SonarController:
 
     def get_middle_back_sonar_distance(self):
         return self.middle_back_sonar_distance
+    # endregion
+
+    # region Printers
+    def print_update_time_interval(self):
+        print 'Update time interval: ', self.update_time_interval
+    # endregion
 
     # endregion
 
@@ -96,22 +107,23 @@ class SonarController:
 
     # region Thread Functions
     def start_sonar_thread(self):
+        self.run_thread = True
         self.thread.start()
 
     def sonar_thread_running(self):
         return threading.Thread.isAlive(self.thread)
 
     def stop_sonar_thread(self):
-        None
-        # Implement
+        self.run_thread = False
+        # Test implementation
 
     def restart_sonar_thread(self):
         None
-        # Implement
+        # Implement (how)
 
     def run(self):
-        while True:
-            time.sleep(float(self.ping_time_interval))
+        while self.run_thread:
+            time.sleep(float(self.update_time_interval))
             self.front_left_sonar_distance = self.read_sonar_distances(self.front_left_sonar_pin)
             time.sleep(.0002)
             self.front_middle_sonar_distance = self.read_sonar_distances(self.front_middle_sonar_pin)
@@ -134,47 +146,23 @@ class SonarController:
             logging.error('Couldn\'t set GPIO mode')
 
     def load_settings(self):
-        # Terminal commands
-        logging.info('Loading terminal commands for the sonar controller.')
-        try:
-            cmd_file = open('info/Sonar/TerminalCommands.txt', 'r')
-            for line in cmd_file:
-                word_list = line.split(',')
-                self.valid_terminal_commands.append((word_list[0], word_list[1].rstrip()))
-            cmd_file.close()
-        except:
-            logging.error('Could not load the sonar controller command file.')
-
-        # Sonar commands
-
-        # Settings
-        logging.info('Loading settings for the sonar controller.')
-        try:
-            cfg = False
-            cfg_file = open('info/Config.txt', 'r')
-            for line in cfg_file:
-                if line.rstrip() == '[Sonar]':
-                    cfg = True
-                    continue
-                elif line.rstrip() == '[/Sonar]':
-                    break
-                if cfg:
-                    word_list = line.split('=')
-                    word_list[0] = word_list[0].rstrip()
-                    word_list[1] = word_list[1].rstrip()
-                    if word_list[0] == 'ping_time_interval': self.ping_time_interval = float(word_list[1].rstrip())
-                    elif word_list[0] == 'front_left_sonar_pin': self.front_left_sonar_pin = int(word_list[1].rstrip())
-                    elif word_list[0] == 'front_middle_sonar_pin': self.front_middle_sonar_pin = int(word_list[1].rstrip())
-                    elif word_list[0] == 'front_right_sonar_pin': self.front_right_sonar_pin = int(word_list[1].rstrip())
-                    elif word_list[0] == 'middle_back_sonar_pin': self.middle_back_sonar_pin = int(word_list[1].rstrip())
-                    else: logging.info('Invalid line in sonar config file: ',line)
-            cfg_file.close()
-        except:
-            logging.error('Could not load the sonar controller config file.')
+        tree = ET.parse('config.xml')
+        root = tree.getroot()
+        device = root.find('sonar')
+        for child in device.iter('terminal_commands'):
+            for command in child.iter('command'):
+                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
+        for child in device.iter('setting'):
+            if child.attrib['name'] == 'update_time_interval': self.update_time_interval = float(child.attrib['value'])
+            elif child.attrib['name'] == 'front_left_sonar_pin': self.front_left_sonar_pin = int(child.attrib['value'])
+            elif child.attrib['name'] == 'front_middle_sonar_pin': self.front_middle_sonar_pin = int(child.attrib['value'])
+            elif child.attrib['name'] == 'front_right_sonar_pin': self.front_right_sonar_pin = int(child.attrib['value'])
+            elif child.attrib['name'] == 'middle_back_sonar_pin': self.middle_back_sonar_pin = int(child.attrib['value'])
+            else: logging.info('Invalid line in sonar config: ', child.attrib['name'])
 
     def save_settings(self):
         cfg_file = open('info/Sonar/Config.txt', 'w')
-        cfg_file.writelines(('ping_time_interval=', self.ping_time_interval))
+        cfg_file.writelines(('update_time_interval=', self.update_time_interval))
         cfg_file.writelines(('front_left_sonar_pin=', self.front_left_sonar_pin))
         cfg_file.writelines(('front_middle_sonar_pin=', self.front_middle_sonar_pin))
         cfg_file.writelines(('front_right_sonar_pin=', self.front_right_sonar_pin))
@@ -188,7 +176,7 @@ class SonarController:
         print 'Front right: ', self.front_right_sonar_pin
         print 'Middle back: ', self.middle_back_sonar_pin
         print 'Etc Settings'
-        print 'Update time interval: ', self.ping_time_interval
+        print 'Update time interval: ', self.update_time_interval
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

@@ -1,2 +1,0 @@
-baud_rate=9600
-port=/dev/ttyS0

@@ -1,6 +1,6 @@
 import logging
 import os
-
+import xml.etree.ElementTree as ET
 import serial
 from termcolor import colored
 
@@ -9,7 +9,9 @@ class MotorController:
     # region Variables
 
     # region Motor Variables
-    serial = serial_baud_rate = serial_port = None
+    serial = None
+    serial_baud_rate = None
+    serial_port = None
     # endregion
 
     # region ETC Variables
@@ -19,7 +21,6 @@ class MotorController:
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
-
     # endregion
 
     # endregion
@@ -42,7 +43,7 @@ class MotorController:
 
     def is_connected(self):
         if self.serial is None: return False
-        return self.serial.is_open
+        return True
     # endregion
 
     # region Motor functions
@@ -77,53 +78,25 @@ class MotorController:
         self.connect()
 
     def load_settings(self):
-        # Terminal Commands
-        logging.info('Loading terminal commands for the motor controller.')
         try:
-            terminal_cmd_file = open('info/Motor/TerminalCommands.txt', 'r')
-            for line in terminal_cmd_file:
-                word_list = line.split(',')
-                self.valid_terminal_commands.append((word_list[0], word_list[1].rstrip()))
-            terminal_cmd_file.close()
-        except:
-            logging.error('Could not load the motor controller terminal command file.')
+            tree = ET.parse('config.xml')
+            root = tree.getroot()
+            device = root.find('motor')
 
-        # Motor Commands
-        logging.info('Loading motor commands for the motor controller.')
-        try:
-            motor_cmd_file = open('info/Motor/MotorCommands.txt', 'r')
-            for line in motor_cmd_file:
-                word_list = line.split(',')
-                self.valid_motor_commands.append((word_list[0], word_list[1].rstrip()))
-                self.valid_motor_commands2.append(word_list[0])
-            motor_cmd_file.close()
-        except:
-            logging.error('Could not load the motor controller motor command file.')
+            for child in device.iter('hardware_commands'):
+                for command in child.iter('command'):
+                    self.valid_motor_commands.append((command.attrib['name'], command.attrib['parameter_count']))
+                    self.valid_motor_commands2.append(command.attrib['name'])
 
-        # Settings
-        logging.info('Loading  settings for the motor controller.')
-        try:
-            cfg = False
-            cfg_file = open('info/Config.txt', 'r')
-            for line in cfg_file:
-                if line.rstrip() == '[Motor]':
-                    cfg = True
-                    continue
-                elif line.rstrip() == '[/Motor]':
-                    break
-                if cfg:
-                    word_list = line.split('=')
-                    word_list[0] = word_list[0].rstrip()
-                    word_list[1] = word_list[1].rstrip()
-                    if word_list[0] == 'serial_baud_rate':
-                        self.serial_baud_rate = word_list[1].rstrip()
-                    elif word_list[0] == 'serial_port':
-                        self.serial_port = word_list[1].rstrip()
-                    else:
-                        logging.info('Invalid line in motor config file: ', line)
-            cfg_file.close()
+            for child in device.iter('terminal_commands'):
+                for command in child.iter('command'):
+                    self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
+
+            for child in device.iter('setting'):
+                if child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
+                elif child.attrib['name'] == 'serial_port': self.serial_port = child.attrib['value']
         except:
-            logging.error('Could not load the motor controller command file.')
+            None
 
     def save_settings(self):
         None
@@ -131,7 +104,7 @@ class MotorController:
     def print_settings(self):
         print 'MOTOR CONTROLLER SETTINGS'
         print 'Serial Port: ', self.serial_port
-        print 'Serial Baud Rate: ', self.serial_baud_rate
+        print 'Serial Baud Rate:', self.serial_baud_rate
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

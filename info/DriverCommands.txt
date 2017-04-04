@@ -1,9 +1,5 @@
 MCT,Enter the motor control terminal.
 SCT,Enter the sonar control terminal.
 GCT,Enter the GPS control terminal.
-4,Start the sonar sensor thread.
-5,Start the gps thread.
-6,Print current sonar sensor distances.
-7,Print current GPS data.
 C,Clear the screen.
 Q,Exit the terminal.

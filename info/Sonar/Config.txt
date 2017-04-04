@@ -1,5 +1,0 @@
-ping_time_interval=0.2
-front_left_sonar_pin=37
-front_middle_sonar_pin=35
-front_right_sonar_pin=33
-middle_back_sonar_pin=31

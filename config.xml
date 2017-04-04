@@ -1,0 +1,127 @@
+<?xml version="1.0" ?>
+<Config>
+    <compass>
+        <settings>
+            <setting name="i2c_port" value="1"/>
+            <setting name="i2c_bus_address" value="0x1E"/>
+            <setting name="declination_minutes" value="-9"/>
+            <setting name="declination_degrees" value="23"/>
+            <setting name="gauss" value="1.3"/>
+            <setting name="update_time_interval" value="0.2"/>
+        </settings>
+        <hardware_commands>
+        </hardware_commands>
+        <terminal_commands>
+            <command name="H" description="Toggle visual of menu."/>
+            <command name="R" description="Return to the main terminal."/>
+            <command name="C" description="Clear the screen."/>
+            <command name="Q" description="Exit the terminal."/>
+        </terminal_commands>
+    </compass>
+    <driver>
+        <settings>
+            <setting name="auto_start_bluetooth_server_thread" value="True"/>
+            <setting name="auto_start_sonar_thread" value="True"/>
+            <setting name="auto_start_gps_thread" value="True"/>
+            <setting name="auto_start_compass_thread" value="True"/>
+            <setting name="auto_connect_to_motor" value="True"/>
+        </settings>
+        <hardware_commands>
+        </hardware_commands>
+        <terminal_commands>
+            <command name="MCT" description="Enter the motor control terminal."/>
+            <command name="SCT" description="Enter the sonar control terminal."/>
+            <command name="GCT" description="Enter the gps control terminal."/>
+            <command name="CCT" description="Enter the compass control terminal."/>
+            <command name="H" description="Toggle visual of menu."/>
+            <command name="C" description="Clear the screen."/>
+            <command name="Q" description="Exit the terminal."/>
+        </terminal_commands>
+
+    </driver>
+    <gps>
+        <settings>
+            <setting name="serial_port" value="/dev/ttyS0" />
+            <setting name="serial_baud_rate" value="9600" />
+        </settings>
+        <hardware_commands>
+        </hardware_commands>
+        <terminal_commands>
+            <command name="H" description="Toggle visual of menu."/>
+            <command name="R" description="Return to the main terminal."/>
+            <command name="C" description="Clear the screen."/>
+            <command name="Q" description="Exit the terminal."/>
+        </terminal_commands>
+
+    </gps>
+    <motor>
+        <settings>
+            <setting name="serial_port" value="/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0" />
+            <setting name="serial_baud_rate" value="19200" />
+        </settings>
+        <hardware_commands>
+            <command name="arc" parameter_count="3">
+                <parameter type="integer" range="1 to 32767" description="Radius."/>
+                <parameter type="integer" range="1 to 32767" description="Top speed."/>
+                <parameter type="integer" range="-32767 to 32767" description="Arc angle."/>
+            </command>
+            <command name="go" parameter_count="2" >
+                <parameter type="integer" range="-127 to 127" description="Left wheel power."/>
+                <parameter type="integer" range="-127 to 127" description="Right wheel power."/>
+            </command>
+            <command name="gospd" parameter_count="2">
+                <parameter type="integer" range="-32767 to 32767" description="Left wheel speed."/>
+                <parameter type="integer" range="-32767 to 32767" description="Right wheel speed"/>
+            </command>
+            <command name="move" parameter_count="3">
+                <parameter type="integer" range="-32767 to 32767" description="Left wheel distance."/>
+                <parameter type="integer" range="-32767 to 32767" description="Right wheel distance."/>
+                <parameter type="integer" range="1 to 32767" description="Speed."/>
+            </command>
+            <command name="trvl" parameter_count="2-3">
+                <parameter type="integer" range="-32767 to 32767" description="Distance."/>
+                <parameter type="integer" range="1 to 32767" description="Top speed."/>
+                <parameter type="integer" range="-32767 to 32767" description="(Optional) Arc angle."/>
+            </command>
+            <command name="turn" parameter_count="2">
+                <parameter type="integer" range="-32767 to 32767" description="Total motor movement."/>
+                <parameter type="integer" range="1 to 512" description="Top speed."/>
+            </command>
+        </hardware_commands>
+        <terminal_commands>
+            <command name="H" description="Toggle visual of menu."/>
+            <command name="R" description="Return to the main terminal."/>
+            <command name="C" description="Clear the screen."/>
+            <command name="Q" description="Exit the terminal."/>
+        </terminal_commands>
+    </motor>
+    <sonar>
+        <settings>
+            <setting name="update_time_interval" value="0.2" />
+            <setting name="front_left_sonar_pin" value="37" />
+            <setting name="front_middle_sonar_pin" value="35" />
+            <setting name="front_right_sonar_pin" value="33" />
+            <setting name="middle_back_sonar_pin" value="31" />
+        </settings>
+        <hardware_commands>
+        </hardware_commands>
+        <terminal_commands>
+            <command name="H" description="Toggle visual of menu."/>
+            <command name="R" description="Return to the main terminal."/>
+            <command name="C" description="Clear the screen."/>
+            <command name="Q" description="Exit the terminal."/>
+        </terminal_commands>
+    </sonar>
+    <bluetooth>
+        <settings>
+            <setting name="server_address" value="B8:27:EB:46:FB:77"/>
+            <setting name="server_in_byte_size" value="1024"/>
+            <setting name="server_out_port" value="1"/>
+            <setting name="server_in_port" value="2"/>
+        </settings>
+        <hardware_commands>
+        </hardware_commands>
+        <software_commands>
+        </software_commands>
+    </bluetooth>
+</Config>

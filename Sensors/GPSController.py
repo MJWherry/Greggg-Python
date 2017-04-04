@@ -1,14 +1,14 @@
 import logging
 import os
 import threading
-
+import time
 import pynmea2
 import serial
+import xml.etree.ElementTree as ET
 from termcolor import colored
 
 
 class GPSController:
-
     # region Variables
 
     # region Serial variables
@@ -36,7 +36,9 @@ class GPSController:
 
     # endregion
 
-    # region Accessors/Mutators
+    # region Accessors/Mutators/Printers
+
+    # region Accessors
     def get_current_latitude(self):
         return self.current_latitude
 
@@ -46,6 +48,9 @@ class GPSController:
     def get_current_depth(self):
         return self.current_depth
 
+    def get_current_position(self):
+        return '(', self.current_latitude, ',', self.current_longitude, ',', self.current_depth, ')'
+
     def get_serial_data(self):
         return self.serial_data
 
@@ -54,38 +59,55 @@ class GPSController:
 
     def get_serial_baud_rate(self):
         return self.serial_baud_rate
+    # endregion
 
+    # region Mutators
     def set_serial_port(self, port):
         self.serial_port = port
 
     def set_serial_baud_rate(self, baud_rate):
         self.serial_baud_rate = baud_rate
+    # endregion
 
-    def test_print_loop(self):
-        streamreader = pynmea2.NMEAStreamReader()
-        while 1:
-            data = self.ser.read()
-            for msg in streamreader.next(data):
-                print msg
-                msg = pynmea2.parse("$GPGGA,184353.07,1929.045,S,02410.506,E,1,04,2.6,100.00,M,-33.9,M,,0000*6D")
-                print msg
+    # region Printers
+    def print_current_latitude(self):
+        print 'Latitude: ', self.current_latitude
+
+    def print_current_longitude(self):
+        print 'Longitude: ', self.current_longitude
+
+    def print_current_depth(self):
+        print 'Depth: ', self.current_depth
+
+    def print_current_position(self):
+        print '(', self.current_latitude, ',', self.current_longitude, ',', self.current_depth, ')'
+
+    def print_serial_data(self):
+        print 'Serial data: ', self.serial_data
+
+    def print_serial_port(self):
+        print 'Serial port: ', self.serial_port
+
+    def print_serial_baud_rate(self):
+        print 'Serial baud rate: ', self.serial_baud_rate
+
+    def print_serial_object(self):
+        print 'Serial object: ', self.serial_stream
+    # endregion
+
     # endregion
 
     # region GPS functions
-
-    def test_main_loop(self):
-        streamreader = pynmea2.NMEAStreamReader()
-        while 1:
-            data = self.serial_stream.read()
-            for msg in streamreader.next(data):
-                print msg
-                msg = pynmea2.parse("$GPGGA,184353.07,1929.045,S,02410.506,E,1,04,2.6,100.00,M,-33.9,M,,0000*6D")
-                print msg
-
+    def test_print_loop(self):
+        while True:
+            self.serial_data = self.serial_stream.read(175)
+            print self.serial_data
+            time.sleep(0.5)
     # endregion
 
     # region Thread Functions
     def start_gps_thread(self):
+        self.run_thread = True
         self.thread.start()
 
     def gps_thread_running(self):
@@ -93,8 +115,8 @@ class GPSController:
         return threading.Thread.isAlive(self.thread)
 
     def stop_gps_thread(self):
-        None
-        # Implement
+        self.run_thread = False
+        # Test implementation
 
     def restart_gps_thread(self):
         None
@@ -107,45 +129,26 @@ class GPSController:
 
     def __init__(self):
         self.load_settings()
+        self.thread = threading.Thread(target=self.run, args=())
         try:
-            self.serial_stream = serial.Serial(self.serial_port, self.serial_baud_rate)
+            self.serial_stream = serial.Serial('/dev/ttyS0', 9600)
             logging.info('GPS hardware connected.')
         except:
             logging.error('Could not establish a connection to the gps hardware.')
 
     def load_settings(self):
-        # Terminal commands
-        logging.info('Loading terminal commands for the gps controller.')
-        try:
-            cmd_file = open('info/GPS/TerminalCommands.txt', 'r')
-            for line in cmd_file:
-                word_list = line.split(',')
-                self.valid_terminal_commands.append((word_list[0], word_list[1].rstrip()))
-            cmd_file.close()
-        except:
-            logging.error('Could not load the gps controller command file.')
+        tree = ET.parse('config.xml')
+        root = tree.getroot()
+        device = root.find('gps')
+        for child in device.iter('terminal_commands'):
+            for command in child.iter('command'):
+                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
 
-        # Settings
-        logging.info('Loading settings for the gps controller.')
-        try:
-            cfg_file = open('info/Config.txt', 'r')
-            cfg = False
-            for line in cfg_file:
-                if line.rstrip() == '[GPS]':
-                    cfg = True
-                    continue
-                elif line.rstrip() == '[/GPS]':
-                    break
-                if cfg:
-                    word_list = line.split('=')
-                    word_list[0] = word_list[0].rstrip()
-                    word_list[1] = word_list[1].rstrip()
-                    if word_list[0] == 'serial_port': self.serial_port = word_list[1].rstrip()
-                    elif word_list[0] == 'serial_baud_rate': self.serial_baud_rate = word_list[1].rstrip()
-                    else: logging.info('Invalid line in GPS config file: ', line)
-            cfg_file.close()
-        except:
-            logging.error('Could not load the gps controller config file.')
+        for child in device.iter('setting'):
+            if child.attrib['name'] == 'serial_port': self.serial_port = str(child.attrib['value'])
+            elif child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
+            else: logging.info('Invalid line in GPS config file: ', child.attrib['name'])
+
 
     def save_settings(self):
         None

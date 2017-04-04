@@ -38,7 +38,7 @@ class Driver:
         self.gc = GPSController.GPSController()
         self.cc = CompassController.CompassController()
 
-        self.server = Server.Server(self.mc, self.sc, self.gc, self.cc)
+        # self.server = Server.Server(self.mc, self.sc, self.gc, self.cc)
 
         # Start the appropiate threads automatically
         # self.sc.start_sonar_thread()
@@ -63,12 +63,12 @@ class Driver:
         print ' {:1}{:^61}{:1}'.format(colored('|', 'magenta'), colored('MAIN MENU', 'white'), colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('INFORMATION', 'white'), colored('|', 'magenta'))
-        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED:', 'white'),
-                                        colored('CONNECTED', 'green') if self.server.Connected() else colored(
-                                            'DISCONNECTED', 'red'), colored('|', 'magenta'))
-        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER LISTENING:', 'white'),
-                                        colored('LISTENING', 'green') if self.server.ServerThreadRunning() else colored(
-                                            'NOT LISTENING', 'red'), colored('|', 'magenta'))
+        #print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED:', 'white'),
+        #                                colored('CONNECTED', 'green') if self.server.Connected() else colored(
+        #                                   'DISCONNECTED', 'red'), colored('|', 'magenta'))
+        #print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER LISTENING:', 'white'),
+        #                                colored('LISTENING', 'green') if self.server.ServerThreadRunning() else colored(
+        #                                    'NOT LISTENING', 'red'), colored('|', 'magenta'))
         print colored(' {}{: ^52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {} {:<41} {}'.format(colored('|', 'magenta'), colored('MOTOR CONTROLLER:', 'white'),
                                         colored('CONNECTED', 'green') if self.mc.is_connected else colored(
@@ -113,6 +113,8 @@ class Driver:
             self.cc.print_settings()
         elif cmd == '4':
             self.mc.print_settings()
+        elif cmd == '5':
+            self.gc.test_print_loop()
 
         elif cmd == 'c':
             os.system(self.clear), self.print_menu()

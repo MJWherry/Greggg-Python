@@ -1,4 +1,0 @@
-C,Clear the screen.
-H,Toggle the menu.
-R,Return to the main menu.
-Q,Exit the program.
