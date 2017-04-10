@@ -4,10 +4,10 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 
-#import RPi.GPIO as GPIO #
+import RPi.GPIO as GPIO #
 from termcolor import colored
 
-GPIO = None
+#GPIO = None
 
 class SonarController:
     # region Variables
@@ -162,8 +162,8 @@ class SonarController:
         self.thread = threading.Thread(target=self.run, args=())
         # FIND A WAY TO TEST PINS
         try:
-            None
-            # GPIO.setmode(GPIO.BOARD)
+            #None
+            GPIO.setmode(GPIO.BOARD)
         except:
             logging.error('Couldn\'t set GPIO mode')
 

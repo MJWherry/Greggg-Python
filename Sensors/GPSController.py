@@ -59,6 +59,7 @@ class GPSController:
 
     def get_serial_baud_rate(self):
         return self.serial_baud_rate
+
     # endregion
 
     # region Mutators
@@ -67,6 +68,7 @@ class GPSController:
 
     def set_serial_baud_rate(self, baud_rate):
         self.serial_baud_rate = baud_rate
+
     # endregion
 
     # region Printers
@@ -93,16 +95,19 @@ class GPSController:
 
     def print_serial_object(self):
         print 'Serial object: ', self.serial_stream
+
     # endregion
 
     # endregion
 
     # region GPS functions
     def test_print_loop(self):
-        while True:
-            self.serial_data = self.serial_stream.read(175)
-            print self.serial_data
-            time.sleep(0.5)
+	None	
+    # while True:
+    #    self.serial_data = self.serial_stream.read(175)
+    #    print self.serial_data
+    #    time.sleep(0.5)
+
     # endregion
 
     # region Thread Functions
@@ -123,7 +128,10 @@ class GPSController:
         # Implement
 
     def run(self):
-        None
+        streamreader = pynmea2.NMEAStreamReader(self.serial_stream,'ignore')
+        while 1:
+            for msg in streamreader.next():
+	 	None
 
     # endregion
 
@@ -145,10 +153,12 @@ class GPSController:
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
 
         for child in device.iter('setting'):
-            if child.attrib['name'] == 'serial_port': self.serial_port = str(child.attrib['value'])
-            elif child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
-            else: logging.info('Invalid line in GPS config file: ', child.attrib['name'])
-
+            if child.attrib['name'] == 'serial_port':
+                self.serial_port = str(child.attrib['value'])
+            elif child.attrib['name'] == 'serial_baud_rate':
+                self.serial_baud_rate = int(child.attrib['value'])
+            else:
+                logging.info('Invalid line in GPS config file: ', child.attrib['name'])
 
     def save_settings(self):
         None

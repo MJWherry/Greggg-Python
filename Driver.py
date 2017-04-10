@@ -41,9 +41,9 @@ class Driver:
         self.server = ServerController.ServerController(self.mc, self.sc, self.gc, self.cc)
 
         # Start the appropiate threads automatically
-        # self.sc.start_sonar_thread()
-        # self.gc.start_gps_thread()
-        # self.cc.start_compass_thread()
+        self.sc.start_sonar_thread()
+        self.gc.start_gps_thread()
+        self.cc.start_compass_thread()
 
         # self.server.StartServerThread()
 
@@ -64,12 +64,12 @@ class Driver:
         print ' {:1}{:^61}{:1}'.format(colored('|', 'magenta'), colored('MAIN MENU', 'white'), colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('INFORMATION', 'white'), colored('|', 'magenta'))
-        #print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED:', 'white'),
-        #                                colored('CONNECTED', 'green') if self.server.Connected() else colored(
-        #                                   'DISCONNECTED', 'red'), colored('|', 'magenta'))
-        #print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER LISTENING:', 'white'),
-        #                                colored('LISTENING', 'green') if self.server.ServerThreadRunning() else colored(
-        #                                    'NOT LISTENING', 'red'), colored('|', 'magenta'))
+        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED:', 'white'),
+                                        colored('CONNECTED', 'green') if self.server.is_connected() else colored(
+                                          'DISCONNECTED', 'red'), colored('|', 'magenta'))
+        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER LISTENING:', 'white'),
+                                        colored('LISTENING', 'green') if self.server.server_thread_running() else colored(
+                                            'NOT LISTENING', 'red'), colored('|', 'magenta'))
         print colored(' {}{: ^52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {} {:<41} {}'.format(colored('|', 'magenta'), colored('MOTOR CONTROLLER:', 'white'),
                                         colored('CONNECTED', 'green') if self.mc.is_connected else colored(
@@ -82,7 +82,8 @@ class Driver:
                                         colored('RUNNING', 'green') if self.gc.gps_thread_running() else colored(
                                             'NOT RUNNING', 'red'), colored('|', 'magenta'))
         print ' {} {} {:<43} {}'.format(colored('|', 'magenta'), colored('COMPASS THREAD:', 'white'),
-                                        colored('RUNNING', 'green') if False else colored('NOT RUNNING', 'red'),
+                                        colored('RUNNING', 'green') if self.cc.compass_thread_running() else colored(
+                                            'NOT RUNNING', 'red'),
                                         colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
@@ -118,11 +119,29 @@ class Driver:
             self.mc.print_settings()
         elif cmd == '5':
             self.server.print_settings()
-
+        elif cmd == '6':
+            print 'Command recognized, setting up'
+            self.server.setup()
+        elif cmd == '7':
+            self.cc.print_compass_heading()
+        elif cmd == '8':
+            self.gc.print_current_position()
         elif cmd == 'c':
             os.system(self.clear), self.print_menu()
+        elif cmd=='9':
+            if self.server.is_connected():
+	    	data = raw_input(' Enter data to send: ')
+	    	self.server.send_data(data)
+	    else:
+		print ' Bluetooth server is not connected.'
+        elif cmd == '10':
+            self.gc.test_print_loop()
         elif cmd == 'q':
-            self.run_terminal_command('c')
+            self.cc.stop_compass_thread()
+            self.gc.stop_gps_thread()
+            self.sc.stop_sonar_thread()
+            self.server.stop_server_thread()
+            os.system(self.clear)
             exit(0)
 
     def parse_command(self, cmd):

@@ -119,6 +119,8 @@
             <setting name="server_in_byte_size" value="1024"/>
             <setting name="server_out_port" value="1"/>
             <setting name="server_in_port" value="2"/>
+            <setting name="server_in_connection_timeout" value="30" />
+            <setting name="server_out_connection_timeout" value="30" />
             <setting name="server_backlog" value="1"/>
         </settings>
         <hardware_commands>

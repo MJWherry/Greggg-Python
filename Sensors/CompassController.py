@@ -1,4 +1,4 @@
-# import hmc5883l
+import hmc5883l
 import logging
 import os
 import threading
@@ -16,7 +16,7 @@ class CompassController:
     # endregion
 
     # region Compass settings
-    # compass = hmc5883l
+    compass = hmc5883l
     gauss = 0
     declination = (0, 0)
     declination_minutes = 0
@@ -73,6 +73,17 @@ class CompassController:
     def get_i2c_bus_address(self):
         return self.i2c_bus_address
 
+    def get_x_axis(self):
+        return self.compass.axes()[0]
+
+    def get_y_axis(self):
+        return self.compass.axes()[1]
+
+    def get_z_axis(self):
+        return self.compass.axes()[2]
+
+    def get_heading(self):
+        return self.compass.degrees(self.compass.heading())
     # endregion
 
     # region Printers
@@ -125,6 +136,7 @@ class CompassController:
         self.thread.start()
 
     def compass_thread_running(self):
+        if self.thread is None: return False
         return threading.Thread.isAlive(self.thread)
 
     def stop_compass_thread(self):
@@ -144,7 +156,7 @@ class CompassController:
 
     def __init__(self):
         self.load_settings()
-        # self.compass = hmc5883l.hmc5883l(gauss=4.7, declination=(-2, 5))
+        self.compass = hmc5883l.hmc5883l(gauss=self.gauss, declination=(self.declination_degrees, self.declination_minutes))
         self.thread = threading.Thread(target=self.run, args=())
 
     def load_settings(self):

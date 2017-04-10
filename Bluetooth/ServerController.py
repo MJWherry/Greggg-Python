@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 import bluetooth
 from termcolor import colored
 import xml.etree.ElementTree as ET
@@ -23,6 +24,8 @@ class ServerController:
     server_backlog = 0
     server_in_port = 0
     server_out_port = 0
+    server_in_connection_timeout = 0
+    server_out_connection_timeout = 0
     server_in_byte_size = 0
     # endregion
 
@@ -58,22 +61,35 @@ class ServerController:
     def get_server_out_port(self):
         return self.server_out_port
 
+    def get_server_in_connection_timeout(self):
+        return self.server_in_connection_timeout
+
+    def get_server_out_connection_timeout(self):
+        return self.server_out_connection_timeout
+
     def get_byte_size(self):
         return self.server_in_byte_size
+
     # endregion
 
     # region Mutators
     def set_server_backlog(self, backlog):
-        self.server_backlog=backlog
+        self.server_backlog = backlog
 
-    def set_server_in_port(self,port):
-        self.server_in_port=port
+    def set_server_in_port(self, port):
+        self.server_in_port = port
 
-    def set_server_out_port(self,port):
-        self.server_out_port=port
+    def set_server_out_port(self, port):
+        self.server_out_port = port
 
-    def set_byte_size(self,size):
-        self.server_in_byte_size=size
+    def set_server_in_connection_timeout(self, value):
+        self.server_in_connection_timeout = value
+
+    def set_server_out_connection_timeout(self, value):
+        self.server_out_connection_timeout = value
+
+    def set_byte_size(self, size):
+        self.server_in_byte_size = size
 
     # endregion
 
@@ -90,13 +106,24 @@ class ServerController:
     def print_server_out_port(self):
         print 'Server out port: ', self.server_out_port
 
+    def print_server_in_connection_timeout(self):
+        print 'Server in connection timeout: ', self.server_in_connection_timeout
+
+    def print_server_out_connection_timeout(self):
+        print 'Server out connection timeout: ', self.server_out_connection_timeout
+
     def print_server_in_byte_size(self):
         print 'Server in byte size: ', self.server_in_byte_size
+
     # endregion
 
     # endregion
 
     # region Server Functions
+
+    def is_connected(self):
+        return False if self.client_address_in == '' and self.client_address_out == '' else True
+
     def create_socket(self):
         self.server_sock_in = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         self.server_sock_out = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -111,26 +138,59 @@ class ServerController:
         self.server_sock_in.listen(self.server_backlog)
         self.server_sock_out.listen(self.server_backlog)
 
+    def setup(self):
+        print 'Creating sockets...'
+        self.create_socket()
+        print 'Binding...'
+        self.bind_server_in_port()
+        self.bind_server_out_port()
+        # self.server_sock_in.settimeout(10)
+        # self.server_sock_out.settimeout(10)
+
+        print 'Listening on backlog'
+        self.listen()
+
+        print 'Waiting for in connection...'
+        self.client_sock_in, self.client_address_in = self.server_sock_in.accept()
+        print 'In connection established with client ', self.client_address_in
+
+        print 'Waiting for out connection...'
+        self.client_sock_out, self.client_address_out = self.server_sock_out.accept()
+        print 'Out connection established with client ', self.client_address_out
+
+        print 'Starting thread...'
+        self.start_server_thread()
+
+    def send_data(self, data):
+        try:
+            self.client_sock_out.send(data)
+        except:
+            print 'No outbound connection available.'
+
     # endregion
 
     # region Thread Functions
-    def start_compass_thread(self):
+    def start_server_thread(self):
         self.run_thread = True
         self.thread.start()
 
-    def compass_thread_running(self):
+    def server_thread_running(self):
         return threading.Thread.isAlive(self.thread)
 
-    def stop_compass_thread(self):
+    def stop_server_thread(self):
         self.run_thread = False
         # Test implementation
 
-    def restart_compass_thread(self):
+    def restart_server_thread(self):
         None
         # Implement
 
     def run(self):
-        None
+        while self.run_thread:
+            data = self.client_sock_in.recv(self.server_in_byte_size)
+            if data:
+                print 'Received: ', data
+                self.parse_terminal_command(data)
 
     # endregion
 
@@ -150,11 +210,20 @@ class ServerController:
             for command in child.iter('command'):
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
         for child in device.iter('setting'):
-            if child.attrib['name'] == 'server_in_port': self.server_in_port = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_backlog': self.server_backlog = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_out_port': self.server_out_port = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_in_byte_size': self.server_in_byte_size = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_address': self.server_address = str(child.attrib['value'])
+            if child.attrib['name'] == 'server_in_port':
+                self.server_in_port = int(child.attrib['value'])
+            elif child.attrib['name'] == 'server_backlog':
+                self.server_backlog = int(child.attrib['value'])
+            elif child.attrib['name'] == 'server_out_port':
+                self.server_out_port = int(child.attrib['value'])
+            elif child.attrib['name'] == 'server_in_connection_timeout':
+                self.server_in_connection_timeout = float(child.attrib['value'])
+            elif child.attrib['name'] == 'server_out_connection_timeout':
+                self.server_out_connection_timeout = float(child.attrib['value'])
+            elif child.attrib['name'] == 'server_in_byte_size':
+                self.server_in_byte_size = int(child.attrib['value'])
+            elif child.attrib['name'] == 'server_address':
+                self.server_address = str(child.attrib['value'])
 
     def save_settings(self):
         None
@@ -168,81 +237,141 @@ class ServerController:
         self.print_server_in_byte_size()
 
     def parse_terminal_command(self, command):
+        # A list of valid prefixes
+        prefixes = ['mc', 'motorcontroller', 'motor_controller',
+                    'sc', 'sonarcontroller', 'sonar_controller',
+                    'gc', 'gpscontroller', 'gps_controller',
+                    'cc', 'compasscontroller', 'compass_controller',
+                    'bc', 'bluetoothcontroller', 'cluetooth_controller']
+        # Data to be returned
+        data = ''
+        # Change the command to lower case
         command = command.lower()
+        # Add the command to a list of commands received
         self.received_commands.append(command)
 
-        commandPrefix = command.split(' ')[0]
-        commandSuffix = command.replace(commandPrefix, '').rstrip()
-        splitCommand = commandSuffix.split(' ')
+        prefix = command.split(' ')[0]
+        suffix = command.replace(prefix, '').rstrip()
+        split = suffix.split(' ')
+        suffix = suffix[1:]
 
-        prefixes = ['mc', 'sc', 'gc']
+        # BASIC COMMAND PARSING (if command == 'h' or c and so on)
+        # If command in valid_commands
+        # Else below
 
-        if commandPrefix not in prefixes:
-            # Inform and return ( ADD LOGGING )
-            print ' No valid command sent.'
-            return
-
-        # If the command sent has a valid prefix
+        # If a non valid prefix is sent
+        if prefix not in prefixes:
+            # Informs user an invalid prefix was sent
+            data = ' Invalid prefix.;'
+            if split[1] == 'get':
+                self.client_sock_out.send(data)
+            elif split[1] == 'print':
+                print ' ', data
+            else:
+                print colored(data, 'red')
+        # If a valid prefix is sent
         else:
-            # region MOTOR CONTROLLER PREFIX
-            if commandPrefix == 'mc':
-                print 'Motor command received...parsing'
-                # Send the motor controller a command (error checking done in
-                # the motor controller class itself)
-                self.mc.run_motor_command(commandSuffix)
-                # Reply with nothing, but still send a reply
-                self.client_sock.send('')
-            # endregion
 
-            # region SONAR CONTROLLER PREFIX
-            elif commandPrefix == 'sc':
-                print 'sonar command received...parsing'
-                # region PRINTING
-                if splitCommand[0] == 'print':
-                    for cmd in splitCommand:
-                        if cmd == 'fl':
-                            ret = ret, ',', self.sc.get_front_left_sonar_distance()
-                        elif cmd == 'fm':
-                            ret = ret, ',', self.sc.get_front_middle_sonar_distance()
-                        elif cmd == 'fr':
-                            ret = ret, ',', self.sc.get_front_right_sonar_distance()
-                        elif cmd == 'mb':
-                            ret = ret, ',', self.sc.get_middle_backS_sonar_distance()
-                        elif cmd == 'all':
-                            ret = ret, ',', self.sc.GetAllData()
-                    print ret
-                # endregion
+            # If the prefix is motor based
+            if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
+                # send the command straight to the motor controller
+                self.mc.run_motor_command(suffix)
 
-                # region GETTING
-                elif splitCommand[0] == 'get':
-                    ret = ''
-                    for cmd in splitCommand:
-                        if cmd == 'fl':
-                            ret = ret, ',', self.sc.get_front_left_sonar_distance()
-                        elif cmd == 'fm':
-                            ret = ret, ',', self.sc.get_front_middle_sonar_distance()
-                        elif cmd == 'fr':
-                            ret = ret, ',', self.sc.get_front_right_sonar_distance()
-                        elif cmd == 'mb':
-                            ret = ret, ',', self.sc.get_middle_backS_sonar_distance()
-                        elif cmd == 'all':
-                            ret = ret, ',', self.sc.GetAllData()
-                    print ret
-                    self.client_sock.send(ret)
+            # If the prefix is sonar based
+            elif prefix == 'sc' or prefix == 'sonarcontroller' or prefix == 'sonar_controller':
+                for cmd in split:
+                    # IF COMMAND SET
+                    # ELSE BELOW
+                    if cmd == 'fl' or cmd == 'frontleft' or cmd == 'front_left':
+                        data += str(self.sc.get_front_left_sonar_distance()) + ','
+                    elif cmd == 'fm' or cmd == 'frontmiddle' or cmd == 'front_middle':
+                        data += str(self.sc.get_front_middle_sonar_distance()) + ','
+                    elif cmd == 'fr' or cmd == 'frontright' or cmd == 'front_right':
+                        data += str(self.sc.get_front_right_sonar_distance()) + ','
+                    elif cmd == 'mb' or cmd == 'middleback' or cmd == 'middle_back':
+                        data += str(self.sc.get_middle_back_sonar_distance()) + ','
+                    elif cmd == 'all':
+                        data += str(self.sc.get_all_sonar_sensor_distances()) + ','
+                    else:
+                        data += 'Invalid parameter,'
+
+                # Remove trailing comma and append a ' delimiter
+                data = data[:-1] + ';'
+                # If the command is a request
+                if split[1] == 'get':
+                    self.client_sock_out.send(data)
+                # If the command is print
+                elif split[1] == 'print':
+                    print colored(data, 'green')
+                # If the command isn't a get, set, or print
                 else:
                     print colored(' Invalid sonar command.', 'red')
-                    # endregion
-            # endregion
+                    # END ELSE
 
-            # region GPS CONTROLLER PREFIX
-            elif commandPrefix == 'gc':
-                if commandSuffix == 'print':
-                    self.gc.PrintData()
-                if commandSuffix == 'get':
-                    self.client_sock.send(self.gc.GetData())
+            # If the prefix is gps based
+            elif prefix == 'gc':
+                # IF COMMAND SET
+                # ELSE BELOW
+                for cmd in split:
+                    if cmd == 'latitude' or cmd == 'lat':
+                        data += str(self.gc.get_current_latitude()) + ','
+                    elif cmd == 'longitude' or cmd == 'lon':
+                        data += str(self.gc.get_current_longitude()) + ','
+                    elif cmd == 'depth' or cmd == 'dep':
+                        data += str(self.gc.get_current_depth()) + ','
+                    elif cmd == 'all' or cmd == 'position':
+                        data += str(self.gc.get_current_position()) + ','
+                    else:
+                        data += 'Invalid parameter,'
+                data = data[:-1]
+                data += ";"
+                if split[1] == 'get':
+                    self.client_sock_out.send(data)
+                elif split[1] == 'print':
+                    print colored(data, 'green')
                 else:
                     print colored(' Invalid gps command.', 'red')
-                    # endregion
+                    # END ELSE
+
+            elif prefix == 'cc':
+                # IF COMMAND SET
+                # ELSE BELOW
+                for cmd in split:
+                    if cmd == 'heading':
+                        data += str(self.cc.get_heading()) + ','
+                    elif cmd == 'declination':
+                        data += str(self.cc.get_declination()) + ','
+                    else:
+                        data += 'Invalid parameter,'
+                data = data[:-1]
+                data += ";"
+                if split[1] == 'get':
+                    self.client_sock_out.send(data)
+                elif split[1] == 'print':
+                    print colored(data, 'green')
+                else:
+                    print colored(' Invalid compass command.', 'red')
+                    # END ELSE
+
+            elif prefix == 'bc':
+                # IF COMMAND SET
+                # ELSE BELOW
+                for cmd in split:
+                    if cmd == 'in_port':
+                        data += str(self.server_in_port) + ','
+                    elif cmd == 'out_port':
+                        data += str(self.server_out_port) + ','
+                    else:
+                        data += 'Invalid parameter,'
+                data = data[:-1]
+                data += ";"
+                if split[1] == 'get':
+                    self.client_sock_out.send(data)
+                elif split[1] == 'print':
+                    print colored(data, 'green')
+                else:
+                    print colored(' Invalid bluetooth server command.', 'red')
+                    # END ELSE
 
     def print_menu(self):
         print colored(' {:_^54}'.format(''), 'magenta')
