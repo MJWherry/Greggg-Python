@@ -251,9 +251,11 @@ class ServerController:
         self.received_commands.append(command)
 
         prefix = command.split(' ')[0]
-        suffix = command.replace(prefix, '').rstrip()
-        split = suffix.split(' ')
+        type = command.split(' ')[1]
+
+        suffix = command.replace(prefix, ' ').rstrip()
         suffix = suffix[1:]
+        split = suffix.split(' ')
 
         # BASIC COMMAND PARSING (if command == 'h' or c and so on)
         # If command in valid_commands
@@ -263,115 +265,39 @@ class ServerController:
         if prefix not in prefixes:
             # Informs user an invalid prefix was sent
             data = ' Invalid prefix.;'
-            if split[1] == 'get':
-                self.client_sock_out.send(data)
-            elif split[1] == 'print':
-                print ' ', data
-            else:
-                print colored(data, 'red')
         # If a valid prefix is sent
         else:
-
             # If the prefix is motor based
             if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
-                # send the command straight to the motor controller
+                # send the command straight to the motor controller parser
                 self.mc.run_motor_command(suffix)
 
             # If the prefix is sonar based
             elif prefix == 'sc' or prefix == 'sonarcontroller' or prefix == 'sonar_controller':
-                for cmd in split:
-                    # IF COMMAND SET
-                    # ELSE BELOW
-                    if cmd == 'fl' or cmd == 'frontleft' or cmd == 'front_left':
-                        data += str(self.sc.get_front_left_sonar_distance()) + ','
-                    elif cmd == 'fm' or cmd == 'frontmiddle' or cmd == 'front_middle':
-                        data += str(self.sc.get_front_middle_sonar_distance()) + ','
-                    elif cmd == 'fr' or cmd == 'frontright' or cmd == 'front_right':
-                        data += str(self.sc.get_front_right_sonar_distance()) + ','
-                    elif cmd == 'mb' or cmd == 'middleback' or cmd == 'middle_back':
-                        data += str(self.sc.get_middle_back_sonar_distance()) + ','
-                    elif cmd == 'all':
-                        data += str(self.sc.get_all_sonar_sensor_distances()) + ','
-                    else:
-                        data += 'Invalid parameter,'
-
-                # Remove trailing comma and append a ' delimiter
-                data = data[:-1] + ';'
-                # If the command is a request
-                if split[1] == 'get':
-                    self.client_sock_out.send(data)
-                # If the command is print
-                elif split[1] == 'print':
-                    print colored(data, 'green')
-                # If the command isn't a get, set, or print
-                else:
-                    print colored(' Invalid sonar command.', 'red')
-                    # END ELSE
+                data = self.sc.parse_terminal_command(suffix)
 
             # If the prefix is gps based
-            elif prefix == 'gc':
-                # IF COMMAND SET
-                # ELSE BELOW
-                for cmd in split:
-                    if cmd == 'latitude' or cmd == 'lat':
-                        data += str(self.gc.get_current_latitude()) + ','
-                    elif cmd == 'longitude' or cmd == 'lon':
-                        data += str(self.gc.get_current_longitude()) + ','
-                    elif cmd == 'depth' or cmd == 'dep':
-                        data += str(self.gc.get_current_depth()) + ','
-                    elif cmd == 'all' or cmd == 'position':
-                        data += str(self.gc.get_current_position()) + ','
-                    else:
-                        data += 'Invalid parameter,'
-                data = data[:-1]
-                data += ";"
-                if split[1] == 'get':
-                    self.client_sock_out.send(data)
-                elif split[1] == 'print':
-                    print colored(data, 'green')
-                else:
-                    print colored(' Invalid gps command.', 'red')
-                    # END ELSE
+            elif prefix == 'gc' or prefix == 'gpscontroller' or prefix == 'gps_controller':
+                data = self.gc.parse_terminal_command(suffix)
 
-            elif prefix == 'cc':
-                # IF COMMAND SET
-                # ELSE BELOW
-                for cmd in split:
-                    if cmd == 'heading':
-                        data += str(self.cc.get_heading()) + ','
-                    elif cmd == 'declination':
-                        data += str(self.cc.get_declination()) + ','
-                    else:
-                        data += 'Invalid parameter,'
-                data = data[:-1]
-                data += ";"
-                if split[1] == 'get':
-                    self.client_sock_out.send(data)
-                elif split[1] == 'print':
-                    print colored(data, 'green')
-                else:
-                    print colored(' Invalid compass command.', 'red')
-                    # END ELSE
+            elif prefix == 'cc' or prefix == 'compasscontroller' or prefix == 'compass_controller':
+                data = self.cc.parse_terminal_command(suffix)
 
-            elif prefix == 'bc':
-                # IF COMMAND SET
-                # ELSE BELOW
+            elif prefix == 'bc' or prefix == 'bluetoothcontroller' or prefix == 'bluetooth_controller':
                 for cmd in split:
                     if cmd == 'in_port':
                         data += str(self.server_in_port) + ','
                     elif cmd == 'out_port':
                         data += str(self.server_out_port) + ','
-                    else:
-                        data += 'Invalid parameter,'
-                data = data[:-1]
-                data += ";"
-                if split[1] == 'get':
-                    self.client_sock_out.send(data)
-                elif split[1] == 'print':
-                    print colored(data, 'green')
-                else:
-                    print colored(' Invalid bluetooth server command.', 'red')
-                    # END ELSE
+
+        data = data[:-1]
+        data += ";"
+        if type == 'get':
+            self.client_sock_out.send(data)
+        elif type == 'print':
+            print ' ', data
+        else:
+            print 'Invalid command type: ', type
 
     def print_menu(self):
         print colored(' {:_^54}'.format(''), 'magenta')

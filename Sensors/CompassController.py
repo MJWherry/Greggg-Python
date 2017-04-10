@@ -19,8 +19,8 @@ class CompassController:
     compass = hmc5883l
     gauss = 0
     declination = (0, 0)
-    declination_minutes = 0
     declination_degrees = 0
+    declination_minutes = 0
     update_time_interval = 0
     current_heading = None
     # endregion
@@ -43,8 +43,13 @@ class CompassController:
     def set_gauss(self, gauss):
         self.gauss = gauss
 
-    def set_declination(self, degrees, minutes):
-        self.declination = (degrees, minutes)
+    def set_declination_degrees(self,degrees):
+        self.declination_degrees = degrees
+        self.declination = (self.declination_degrees, self.declination_minutes)
+
+    def set_declination_minutes(self,minutes):
+        self.declination_minutes = minutes
+        self.declination=(self.declination_degrees, self.declination_minutes)
 
     def set_update_time_interval(self, seconds):
         self.update_time_interval = seconds
@@ -63,6 +68,12 @@ class CompassController:
 
     def get_declination(self):
         return self.declination
+
+    def get_declination_degrees(self):
+        return self.declination_degrees
+
+    def get_declination_minutes(self):
+        return self.declination_minutes
 
     def get_update_time_interval(self):
         return self.update_time_interval
@@ -84,6 +95,7 @@ class CompassController:
 
     def get_heading(self):
         return self.compass.degrees(self.compass.heading())
+
     # endregion
 
     # region Printers
@@ -92,6 +104,12 @@ class CompassController:
 
     def print_declination(self):
         print 'Declination: ', self.declination
+
+    def print_declination_degrees(self):
+        print 'Declination degrees: ', self.declination_degrees
+
+    def print_declination_minutes(self):
+       print 'Declination minutes: ', self.declination_minutes
 
     def print_update_time_interval(self):
         print 'Update time interval: ', self.update_time_interval
@@ -112,7 +130,7 @@ class CompassController:
         print 'Z-Axes: ', self.compass.axes()[2]
 
     def print_heading(self):
-        print 'Heading: ', self.compass.heading()
+        print 'Heading: ', self.compass.degrees(self.compass.heading())
 
     def print_compass_object(self):
         print 'Compass object: ', self.compass
@@ -122,11 +140,6 @@ class CompassController:
     # endregion
 
     # region Compass functions
-    def print_compass(self):
-        print self.compass
-
-    def print_compass_heading(self):
-        print 'Heading: ' + str(self.compass.degrees(self.compass.heading())) + '     '
 
     # endregion
 
@@ -173,8 +186,6 @@ class CompassController:
             elif child.attrib['name'] == 'declination_degrees': self.declination_degrees = int(child.attrib['value'])
             elif child.attrib['name'] == 'gauss': self.gauss = float(child.attrib['value'])
             elif child.attrib['name'] == 'update_time_interval': self.update_time_interval = float(child.attrib['value'])
-            else: logging.info('Invalid line in compass config file: ', child.attrib['name'])
-
 
     def save_settings(self):
         None
@@ -191,6 +202,8 @@ class CompassController:
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
+        split = cmd.split()
+        type = split[0]
         if cmd == 'c':
             os.system(self.clear)
             self.print_menu()
@@ -204,6 +217,18 @@ class CompassController:
             self.return_to_main_menu = True
         elif cmd == 'q':
             exit(0)
+        elif type == 'get' or type == 'print':
+            data = ''
+            for cmd in split:
+                if cmd == 'heading':
+                    data += str(self.cc.get_heading()) + ','
+                elif cmd == 'declination':
+                    data += str(self.cc.get_declination()) + ','
+            data = data[:-1] + ';'
+            if type == 'get':
+                return data
+            elif type == 'print':
+                print colored(data, 'green')
 
     def print_menu(self):
         print colored(' {:_^54}'.format(''), 'magenta')

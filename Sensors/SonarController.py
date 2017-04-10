@@ -45,7 +45,8 @@ class SonarController:
         return self.update_time_interval
 
     def get_all_sonar_sensor_distances(self):
-        return self.front_middle_sonar_distance, ',', self.front_left_sonar_distance, ',', self.middle_back_sonar_distance, ',', self.front_right_sonar_distance
+        return '{},{},{},{}'.format(self.front_middle_sonar_distance, self.front_left_sonar_distance,
+                         self.middle_back_sonar_distance, self.front_right_sonar_distance)
 
     def get_front_left_sonar_distance(self):
         return self.front_left_sonar_distance
@@ -110,6 +111,8 @@ class SonarController:
         :param pin: The pin number
         :return: the distance in centimeters
         """
+        start_time = 0
+        end_time = 0
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, 0)
         time.sleep(0.000002)
@@ -200,6 +203,8 @@ class SonarController:
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
+        split = cmd.split()
+        type = split[0]
         if cmd == 'c':
             os.system(self.clear)
             self.print_menu()
@@ -211,6 +216,26 @@ class SonarController:
             self.return_to_main_menu = True
         elif cmd == 'q':
             exit(0)
+        elif type == 'set':
+            None
+        elif type == 'print' or split[0] == 'get':
+            data=''
+            for cmd in split:
+                if cmd == 'fl' or cmd == 'frontleft' or cmd == 'front_left':
+                    data += str(self.get_front_left_sonar_distance()) + ','
+                elif cmd == 'fm' or cmd == 'frontmiddle' or cmd == 'front_middle':
+                    data += str(self.get_front_middle_sonar_distance()) + ','
+                elif cmd == 'fr' or cmd == 'frontright' or cmd == 'front_right':
+                    data += str(self.get_front_right_sonar_distance()) + ','
+                elif cmd == 'mb' or cmd == 'middleback' or cmd == 'middle_back':
+                    data += str(self.get_middle_back_sonar_distance()) + ','
+                elif cmd == 'all':
+                    data += str(self.get_all_sonar_sensor_distances()) + ','
+            data = data[:-1]+';'
+            if type == 'get':
+                return data
+            elif type == 'print':
+                print colored(data, 'green')
 
     def print_menu(self):
         if self.hide_menu: return

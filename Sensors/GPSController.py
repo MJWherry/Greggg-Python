@@ -49,7 +49,7 @@ class GPSController:
         return self.current_depth
 
     def get_current_position(self):
-        return '(', self.current_latitude, ',', self.current_longitude, ',', self.current_depth, ')'
+        return '{},{}'.format(self.current_latitude, self.current_longitude)
 
     def get_serial_data(self):
         return self.serial_data
@@ -73,40 +73,35 @@ class GPSController:
 
     # region Printers
     def print_current_latitude(self):
-        print 'Latitude: ', self.current_latitude
+        print 'Latitude: {}'.format(self.current_latitude)
 
     def print_current_longitude(self):
-        print 'Longitude: ', self.current_longitude
+        print 'Longitude: {}'.format(self.current_longitude)
 
     def print_current_depth(self):
-        print 'Depth: ', self.current_depth
+        print 'Depth: {}'.format(self.current_depth)
 
     def print_current_position(self):
-        print '(', self.current_latitude, ',', self.current_longitude, ',', self.current_depth, ')'
+        print '{},{}'.format(self.current_latitude, self.current_longitude)
 
     def print_serial_data(self):
-        print 'Serial data: ', self.serial_data
+        print 'Serial data: {}'.format(self.serial_data)
 
     def print_serial_port(self):
-        print 'Serial port: ', self.serial_port
+        print 'Serial port: {}'.format(self.serial_port)
 
     def print_serial_baud_rate(self):
-        print 'Serial baud rate: ', self.serial_baud_rate
+        print 'Serial baud rate: {}'.format(self.serial_baud_rate)
 
     def print_serial_object(self):
-        print 'Serial object: ', self.serial_stream
+        print 'Serial object: {}'.format(self.serial_stream)
 
     # endregion
 
     # endregion
 
     # region GPS functions
-    def test_print_loop(self):
-	None	
-    # while True:
-    #    self.serial_data = self.serial_stream.read(175)
-    #    print self.serial_data
-    #    time.sleep(0.5)
+
 
     # endregion
 
@@ -131,15 +126,14 @@ class GPSController:
         streamreader = pynmea2.NMEAStreamReader(self.serial_stream,'ignore')
         while 1:
             for msg in streamreader.next():
-	 	None
-
+                None
     # endregion
 
     def __init__(self):
         self.load_settings()
         self.thread = threading.Thread(target=self.run, args=())
         try:
-            self.serial_stream = serial.Serial('/dev/ttyS0', 9600)
+            self.serial_stream = serial.Serial(self.serial_port, self.serial_baud_rate)
             logging.info('GPS hardware connected.')
         except:
             logging.error('Could not establish a connection to the gps hardware.')
@@ -165,11 +159,13 @@ class GPSController:
 
     def print_settings(self):
         print 'GPS CONTROLLER SETTINGS'
-        print 'Serial Port: ', self.serial_port
-        print 'Serial Baud Rate: ', self.serial_baud_rate
+        self.print_serial_port()
+        self.print_serial_baud_rate()
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
+        split = cmd.split()
+        type = split[0]
         if cmd == 'c':
             os.system(self.clear)
             if not self.hide_menu:
@@ -184,6 +180,22 @@ class GPSController:
             self.return_to_main_menu = True
         elif cmd == 'q':
             exit(0)
+        elif cmd[0] == 'print' or cmd[0] == 'get':
+            data=''
+            for cmd in split:
+                if cmd == 'latitude' or cmd == 'lat':
+                    data += str(self.gc.get_current_latitude()) + ','
+                elif cmd == 'longitude' or cmd == 'lon':
+                    data += str(self.gc.get_current_longitude()) + ','
+                elif cmd == 'depth' or cmd == 'dep':
+                    data += str(self.gc.get_current_depth()) + ','
+                elif cmd == 'all' or cmd == 'position':
+                    data += str(self.gc.get_current_position()) + ','
+            data = data[:-1] + ';'
+            if type == 'get':
+                return data
+            elif type == 'print':
+                print colored(data, 'green')
 
     def print_menu(self):
         print colored(' {:_^54}'.format(''), 'magenta')
