@@ -18,7 +18,6 @@ class CompassController:
     # region Compass settings
     compass = hmc5883l
     gauss = 0
-    declination = (0, 0)
     declination_degrees = 0
     declination_minutes = 0
     update_time_interval = 0
@@ -67,7 +66,7 @@ class CompassController:
         return self.gauss
 
     def get_declination(self):
-        return self.declination
+        return (self.declination_degrees,self.declination_minutes)
 
     def get_declination_degrees(self):
         return self.declination_degrees
@@ -103,7 +102,7 @@ class CompassController:
         print 'Gauss: ', self.gauss
 
     def print_declination(self):
-        print 'Declination: ', self.declination
+        print 'Declination: ', self.get_declination()
 
     def print_declination_degrees(self):
         print 'Declination degrees: ', self.declination_degrees
@@ -221,9 +220,9 @@ class CompassController:
             data = ''
             for cmd in split:
                 if cmd == 'heading':
-                    data += str(self.cc.get_heading()) + ','
+                    data += str(self.get_heading()) + ','
                 elif cmd == 'declination':
-                    data += str(self.cc.get_declination()) + ','
+                    data += str(self.get_declination()) + ','
             data = data[:-1] + ';'
             if type == 'get':
                 return data
@@ -237,6 +236,10 @@ class CompassController:
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
                                    colored('|', 'magenta'))
+        print ' {} {} {:<43} {}'.format(colored('|', 'magenta'), colored('THREAD:', 'white'),
+                                        colored('RUNNING', 'green') if self.compass_thread_running() else colored(
+                                            'NOT RUNNING', 'red'),
+                                        colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
                                    colored('|', 'magenta'))

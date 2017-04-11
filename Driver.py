@@ -1,8 +1,8 @@
 import os
-
+from guppy import hpy; h=hpy()
 from termcolor import colored
 import xml.etree.ElementTree as ET
-from Bluetooth import ServerController
+from Bluetooth import BluetoothController
 from Motors import MotorController
 from Sensors import SonarController, GPSController, CompassController
 
@@ -13,6 +13,7 @@ class Driver:
     # region ETC VARIABLES
     valid_terminal_commands = []
     clear = 'cls' if os.name == 'nt' else 'clear'
+    hide_menu = False
     # endregion
 
     # region CONTROLLER VARIABLES
@@ -20,8 +21,7 @@ class Driver:
     sc = None
     gc = None
     cc = None
-    server = None
-
+    bc = None
     # endregion
 
     # endregion
@@ -38,15 +38,12 @@ class Driver:
         self.gc = GPSController.GPSController()
         self.cc = CompassController.CompassController()
 
-        self.server = ServerController.ServerController(self.mc, self.sc, self.gc, self.cc)
+        self.bc = BluetoothController.BluetoothController(self.mc, self.sc, self.gc, self.cc)
 
-        # Start the appropiate threads automatically
+        # Start the appropriate threads automatically
         self.sc.start_sonar_thread()
         self.gc.start_gps_thread()
         self.cc.start_compass_thread()
-
-        # self.server.StartServerThread()
-
 
         # Start the terminal
         self.terminal()
@@ -60,15 +57,17 @@ class Driver:
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
 
     def print_menu(self):
+        if self.hide_menu: return
         print colored(' {:_^54}'.format(''), 'magenta')
         print ' {:1}{:^61}{:1}'.format(colored('|', 'magenta'), colored('MAIN MENU', 'white'), colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('INFORMATION', 'white'), colored('|', 'magenta'))
         print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED:', 'white'),
-                                        colored('CONNECTED', 'green') if self.server.is_connected() else colored(
-                                          'DISCONNECTED', 'red'), colored('|', 'magenta'))
+                                        colored('CONNECTED', 'green') if self.bc.is_connected() else colored(
+                                            'DISCONNECTED', 'red'), colored('|', 'magenta'))
         print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER LISTENING:', 'white'),
-                                        colored('LISTENING', 'green') if self.server.server_thread_running() else colored(
+                                        colored('LISTENING',
+                                                'green') if self.bc.server_thread_running() else colored(
                                             'NOT LISTENING', 'red'), colored('|', 'magenta'))
         print colored(' {}{: ^52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {} {:<41} {}'.format(colored('|', 'magenta'), colored('MOTOR CONTROLLER:', 'white'),
@@ -97,71 +96,70 @@ class Driver:
                                                       colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
-    def run_terminal_command(self, cmd):
-        if cmd == 'mct':
-            self.mc.terminal(), self.run_terminal_command('c')
+    def parse_terminal_command(self, cmd):
+        prefix = cmd.split()[0]
+        suffix = cmd.replace(prefix, '').rstrip()
+        suffix = suffix[1:]
+
+        if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
+            self.mc.parse_terminal_command(suffix)
+        elif prefix == 'sc' or prefix == 'sonarcontroller' or prefix == 'sonar_controller':
+            self.sc.parse_terminal_command(suffix)
+        elif prefix == 'gc' or prefix == 'gpscontroller' or prefix == 'gps_controller':
+            self.gc.parse_terminal_command(suffix)
+        elif prefix == 'cc' or prefix == 'compasscontroller' or prefix == 'compass_controller':
+            self.cc.parse_terminal_command(suffix)
+        elif prefix == 'bc' or prefix == 'bluetoothcontroller' or prefix == 'bluetooth_controller':
+            self.bc.parse_terminal_command(suffix)
+
+        elif cmd == 'mct':
+            self.mc.terminal(), self.parse_terminal_command('c')
         elif cmd == 'sct':
-            self.sc.terminal(), self.run_terminal_command('c')
+            self.sc.terminal(), self.parse_terminal_command('c')
         elif cmd == 'gct':
-            self.gc.terminal(), self.run_terminal_command('c')
+            self.gc.terminal(), self.parse_terminal_command('c')
         elif cmd == 'cct':
-            self.cc.terminal(), self.run_terminal_command('c')
+            self.cc.terminal(), self.parse_terminal_command('c')
         elif cmd == 'bct':
-            self.server.terminal(), self.run_terminal_command('c')
+            self.bc.terminal(), self.parse_terminal_command('c')
 
         elif cmd == '1':
-            self.sc.print_settings()
+            self.sc.restart_sonar_thread()
         elif cmd == '2':
-            self.gc.print_settings()
-        elif cmd == '3':
-            self.cc.print_settings()
-        elif cmd == '4':
-            self.mc.print_settings()
-        elif cmd == '5':
-            self.server.print_settings()
-        elif cmd == '6':
-            print 'Command recognized, setting up'
-            self.server.setup()
-        elif cmd == '7':
-            self.cc.print_compass_heading()
-        elif cmd == '8':
-            self.gc.print_current_position()
+            self.sc.stop_sonar_thread()
+
+        elif cmd == 'con':
+            self.bc.setup()
+        elif cmd == 'h':
+            if self.hide_menu:
+                self.hide_menu = False
+            else:
+                self.hide_menu = True
+            self.parse_terminal_command('c')
         elif cmd == 'c':
             os.system(self.clear), self.print_menu()
-        elif cmd=='9':
-            if self.server.is_connected():
-	    	data = raw_input(' Enter data to send: ')
-	    	self.server.send_data(data)
-	    else:
-		print ' Bluetooth server is not connected.'
-        elif cmd == '10':
-            self.gc.test_print_loop()
         elif cmd == 'q':
             self.cc.stop_compass_thread()
             self.gc.stop_gps_thread()
             self.sc.stop_sonar_thread()
-            self.server.stop_server_thread()
+            self.bc.stop_server_thread()
             os.system(self.clear)
             exit(0)
 
-    def parse_command(self, cmd):
-        cmd = cmd.lower()
-        commandPrefix = cmd.split(' ')[0]
-        commandSuffix = cmd.replace(commandPrefix, '').strip()
-
-        prefixes = ['mc', 'sc', 'gc']
-
-        if cmd not in prefixes:
-            self.run_terminal_command(cmd)
-        else:
-            # COPY STUFF OVER FROM SERVER CLASS WHEN DONE
-            None
+        elif cmd == '8':
+            self.sc.stop_sonar_thread()
+        elif cmd == '9':
+            if self.bc.is_connected():
+                data = raw_input(' Enter data to send: ')
+                self.bc.send_data(data)
+            else:
+                print ' Bluetooth server is not connected.'
 
     def terminal(self):
         self.print_menu()
         while True:
             cmd = raw_input(colored(' Enter an option: ', 'cyan'))
-            self.parse_command(cmd)
+            self.parse_terminal_command(cmd)
 
 
 d = Driver()

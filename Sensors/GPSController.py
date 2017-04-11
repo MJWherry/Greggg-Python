@@ -124,9 +124,10 @@ class GPSController:
 
     def run(self):
         streamreader = pynmea2.NMEAStreamReader(self.serial_stream,'ignore')
-        while 1:
+        while self.run_thread:
             for msg in streamreader.next():
                 None
+		time.sleep(1)
     # endregion
 
     def __init__(self):
@@ -204,6 +205,9 @@ class GPSController:
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
                                    colored('|', 'magenta'))
+        print ' {} {} {:<47} {}'.format(colored('|', 'magenta'), colored('THREAD:', 'white'),
+                                        colored('RUNNING', 'green') if self.gps_thread_running() else colored(
+                                            'NOT RUNNING', 'red'), colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
                                    colored('|', 'magenta'))

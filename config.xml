@@ -7,7 +7,7 @@
             <setting name="declination_minutes" value="-9"/>
             <setting name="declination_degrees" value="23"/>
             <setting name="gauss" value="1.3"/>
-            <setting name="update_time_interval" value="0.2"/>
+            <setting name="update_time_interval" value="1"/>
         </settings>
         <hardware_commands>
         </hardware_commands>
@@ -34,6 +34,7 @@
             <command name="GCT" description="Enter the gps control terminal."/>
             <command name="CCT" description="Enter the compass control terminal."/>
             <command name="BCT" description="Enter the bluetooth server control terminal."/>
+            <command name="CON" description="Start listening for a bluetooth connection." />
             <command name="H" description="Toggle visual of menu."/>
             <command name="C" description="Clear the screen."/>
             <command name="Q" description="Exit the terminal."/>
@@ -62,31 +63,31 @@
         </settings>
         <hardware_commands>
             <command name="arc" parameter_count="3">
-                <parameter type="integer" range="1 to 32767" description="Radius."/>
-                <parameter type="integer" range="1 to 32767" description="Top speed."/>
-                <parameter type="integer" range="-32767 to 32767" description="Arc angle."/>
+                <parameter range="1 to 32767" description="Radius."/>
+                <parameter range="1 to 32767" description="Top speed."/>
+                <parameter range="-32767 to 32767" description="Arc angle."/>
             </command>
             <command name="go" parameter_count="2" >
-                <parameter type="integer" range="-127 to 127" description="Left wheel power."/>
-                <parameter type="integer" range="-127 to 127" description="Right wheel power."/>
+                <parameter range="-127 to 127" description="Left wheel power."/>
+                <parameter range="-127 to 127" description="Right wheel power."/>
             </command>
             <command name="gospd" parameter_count="2">
-                <parameter type="integer" range="-32767 to 32767" description="Left wheel speed."/>
-                <parameter type="integer" range="-32767 to 32767" description="Right wheel speed"/>
+                <parameter range="-32767 to 32767" description="Left wheel speed."/>
+                <parameter range="-32767 to 32767" description="Right wheel speed"/>
             </command>
             <command name="move" parameter_count="3">
-                <parameter type="integer" range="-32767 to 32767" description="Left wheel distance."/>
-                <parameter type="integer" range="-32767 to 32767" description="Right wheel distance."/>
-                <parameter type="integer" range="1 to 32767" description="Speed."/>
+                <parameter range="-32767 to 32767" description="Left wheel distance."/>
+                <parameter range="-32767 to 32767" description="Right wheel distance."/>
+                <parameter range="1 to 32767" description="Speed."/>
             </command>
             <command name="trvl" parameter_count="2-3">
-                <parameter type="integer" range="-32767 to 32767" description="Distance."/>
-                <parameter type="integer" range="1 to 32767" description="Top speed."/>
-                <parameter type="integer" range="-32767 to 32767" description="(Optional) Arc angle."/>
+                <parameter range="-32767 to 32767" description="Distance."/>
+                <parameter range="1 to 32767" description="Top speed."/>
+                <parameter range="-32767 to 32767" description="(Optional) Arc angle."/>
             </command>
             <command name="turn" parameter_count="2">
-                <parameter type="integer" range="-32767 to 32767" description="Total motor movement."/>
-                <parameter type="integer" range="1 to 512" description="Top speed."/>
+                <parameter range="-32767 to 32767" description="Total motor movement."/>
+                <parameter range="1 to 512" description="Top speed."/>
             </command>
         </hardware_commands>
         <terminal_commands>
@@ -98,7 +99,7 @@
     </motor>
     <sonar>
         <settings>
-            <setting name="update_time_interval" value="0.2" />
+            <setting name="update_time_interval" value="0.5" />
             <setting name="front_left_sonar_pin" value="37" />
             <setting name="front_middle_sonar_pin" value="35" />
             <setting name="front_right_sonar_pin" value="33" />

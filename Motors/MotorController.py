@@ -17,7 +17,6 @@ class MotorController:
     # region ETC Variables
     valid_terminal_commands = []
     valid_motor_commands = []
-    valid_motor_commands2 = []
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
@@ -49,6 +48,9 @@ class MotorController:
     # region Printers
     def print_serial_port(self):
         print 'Serial port: ', self.serial_port
+
+    def print_serial_baud_rate(self):
+        print 'Serial baud rate: ', self.serial_baud_rate
     # endregion
 
     # endregion
@@ -65,11 +67,26 @@ class MotorController:
         except:
             logging.error('Could not establish a connection to the motor hardware.')
 
-    def check_motor_command(self, command):
-        commandBase = command.split()[0]
-        if commandBase not in self.valid_motor_commands2: return False
-        # Check syntax (int int and so on, after motor command file gets updated
-        return True
+    def check_motor_command(self, cmd):
+        cmd_base = cmd.split()[0]
+        parameters = []
+        valid = False
+
+        for parameter in cmd.split():
+            if parameter.isdigit():
+                parameters.append(int(parameter))
+
+        for command in self.valid_motor_commands:
+            if command[0] == cmd_base:
+                if len(parameters) == int(command[1]):
+                    param_number = 0
+                    for parameter_range in command[2]:
+                        return True
+                        param_number+=1
+                        return True
+                else:
+                    return False
+        return valid
 
     def run_motor_command(self,cmd):
         if self.check_motor_command(cmd):
@@ -94,8 +111,10 @@ class MotorController:
 
         for child in device.iter('hardware_commands'):
             for command in child.iter('command'):
-                self.valid_motor_commands.append((command.attrib['name'], command.attrib['parameter_count']))
-                self.valid_motor_commands2.append(command.attrib['name'])
+                valid_command = (command.attrib['name'], command.attrib['parameter_count'], [])
+                for parameter in command.iter('parameter'):
+                    valid_command[2].append((parameter.attrib['description'], parameter.attrib['range']))
+                self.valid_motor_commands.append(valid_command)
 
         for child in device.iter('terminal_commands'):
             for command in child.iter('command'):
@@ -111,8 +130,8 @@ class MotorController:
 
     def print_settings(self):
         print 'MOTOR CONTROLLER SETTINGS'
-        print 'Serial Port: ', self.serial_port
-        print 'Serial Baud Rate:', self.serial_baud_rate
+        self.print_serial_port()
+        self.print_serial_baud_rate()
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

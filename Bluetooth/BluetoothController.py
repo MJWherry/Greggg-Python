@@ -10,7 +10,7 @@ import Sensors.GPSController
 import Sensors.SonarController
 
 
-class ServerController:
+class BluetoothController:
     # region Variables
 
     # region Bluetooth Variables
@@ -189,7 +189,6 @@ class ServerController:
         while self.run_thread:
             data = self.client_sock_in.recv(self.server_in_byte_size)
             if data:
-                print 'Received: ', data
                 self.parse_terminal_command(data)
 
     # endregion
@@ -280,16 +279,17 @@ class ServerController:
             elif prefix == 'gc' or prefix == 'gpscontroller' or prefix == 'gps_controller':
                 data = self.gc.parse_terminal_command(suffix)
 
+            # If the prefix is compass based
             elif prefix == 'cc' or prefix == 'compasscontroller' or prefix == 'compass_controller':
                 data = self.cc.parse_terminal_command(suffix)
 
+            # If the prefix is bluetooth based
             elif prefix == 'bc' or prefix == 'bluetoothcontroller' or prefix == 'bluetooth_controller':
                 for cmd in split:
                     if cmd == 'in_port':
                         data += str(self.server_in_port) + ','
                     elif cmd == 'out_port':
                         data += str(self.server_out_port) + ','
-
         data = data[:-1]
         data += ";"
         if type == 'get':
@@ -306,6 +306,13 @@ class ServerController:
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
                                    colored('|', 'magenta'))
+        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('SERVER CONNECTED:', 'white'),
+                                        colored('CONNECTED', 'green') if self.is_connected() else colored(
+                                            'DISCONNECTED', 'red'), colored('|', 'magenta'))
+        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('SERVER LISTENING:', 'white'),
+                                        colored('LISTENING',
+                                                'green') if self.server_thread_running() else colored(
+                                            'NOT LISTENING', 'red'), colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
                                    colored('|', 'magenta'))
