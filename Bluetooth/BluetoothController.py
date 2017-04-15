@@ -27,6 +27,7 @@ class BluetoothController:
     server_in_connection_timeout = 0
     server_out_connection_timeout = 0
     server_in_byte_size = 0
+    connected=False
     # endregion
 
     # region Controller Variables
@@ -159,7 +160,9 @@ class BluetoothController:
         print 'Out connection established with client ', self.client_address_out
 
         print 'Starting thread...'
-        self.start_server_thread()
+        if not self.run_thread:
+            self.start_server_thread()
+        self.connected=True
 
     def send_data(self, data):
         try:
@@ -179,17 +182,34 @@ class BluetoothController:
 
     def stop_server_thread(self):
         self.run_thread = False
+
         # Test implementation
 
     def restart_server_thread(self):
         None
         # Implement
 
+    def close_sockets(self):
+        self.connected = False
+        self.client_sock_in.close()
+        self.client_sock_out.close()
+        self.server_sock_in.close()
+        self.server_sock_out.close()
+
     def run(self):
         while self.run_thread:
-            data = self.client_sock_in.recv(self.server_in_byte_size)
-            if data:
-                self.parse_terminal_command(data)
+            self.setup()
+            while self.connected:
+                try:
+                    data = self.client_sock_in.recv(self.server_in_byte_size)
+                    if data:
+                        self.parse_terminal_command(data)
+                except:
+		    self.close_sockets()
+                    print 'Disconnected, waiting for reconnection...'
+
+
+
 
     # endregion
 
@@ -242,34 +262,30 @@ class BluetoothController:
                     'gc', 'gpscontroller', 'gps_controller',
                     'cc', 'compasscontroller', 'compass_controller',
                     'bc', 'bluetoothcontroller', 'cluetooth_controller']
+
         # Data to be returned
         data = ''
+
         # Change the command to lower case
         command = command.lower()
-        # Add the command to a list of commands received
-        self.received_commands.append(command)
 
-        prefix = command.split(' ')[0]
-        type = command.split(' ')[1]
-
-        suffix = command.replace(prefix, ' ').rstrip()
-        suffix = suffix[1:]
-        split = suffix.split(' ')
+        # Break apart whats received
+        prefix = command.split()[0]
+        type = command.split()[1]
+        suffix = command.replace(prefix + ' ', '')
+        parameters = suffix.replace(type + ' ', '')
 
         # BASIC COMMAND PARSING (if command == 'h' or c and so on)
         # If command in valid_commands
         # Else below
-
         # If a non valid prefix is sent
-        if prefix not in prefixes:
-            # Informs user an invalid prefix was sent
-            data = ' Invalid prefix.;'
+
         # If a valid prefix is sent
-        else:
+        if prefix in prefixes:
             # If the prefix is motor based
             if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
                 # send the command straight to the motor controller parser
-                self.mc.run_motor_command(suffix)
+                data = self.mc.run_motor_command(suffix)
 
             # If the prefix is sonar based
             elif prefix == 'sc' or prefix == 'sonarcontroller' or prefix == 'sonar_controller':
@@ -285,19 +301,20 @@ class BluetoothController:
 
             # If the prefix is bluetooth based
             elif prefix == 'bc' or prefix == 'bluetoothcontroller' or prefix == 'bluetooth_controller':
-                for cmd in split:
+                for cmd in parameters:
                     if cmd == 'in_port':
                         data += str(self.server_in_port) + ','
                     elif cmd == 'out_port':
                         data += str(self.server_out_port) + ','
-        data = data[:-1]
-        data += ";"
-        if type == 'get':
-            self.client_sock_out.send(data)
-        elif type == 'print':
-            print ' ', data
-        else:
-            print 'Invalid command type: ', type
+
+            # Replace last ',' with delimiter ';'
+            data = data[:-1] + ';'
+
+            # Returns the data to the requester if it's a get, if it's a print then it will print
+            if type == 'get':
+                self.client_sock_out.send(data)
+            elif type == 'print':
+                print ' ', data
 
     def print_menu(self):
         print colored(' {:_^54}'.format(''), 'magenta')
@@ -329,3 +346,4 @@ class BluetoothController:
             self.parse_terminal_command(cmd)
         self.return_to_main_menu = False
         return
+

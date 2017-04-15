@@ -18,6 +18,7 @@ class SonarController:
     front_right_sonar_pin = 0
     middle_back_sonar_pin = 0
     update_time_interval = 0
+    max_cpu_iterations = 0
     # endregion
 
     # region Distances
@@ -106,35 +107,22 @@ class SonarController:
 
     # region Sonar functions
     def read_sonar_distances(self, pin):
-        """
-        Calculates the distance of the sensor on the pin.
-        :param pin: The pin number
-        :return: the distance in centimeters
-        """
-        print 'Setting times'
-        start_time = 0
-        end_time = 0
-        print 'GPIO.setup(pin, GPIO.OUT)'
         GPIO.setup(pin, GPIO.OUT)
-        print 'GPIO.output(pin, 0)'
         GPIO.output(pin, 0)
-        print 'time.sleep(0.000002)'
         time.sleep(0.000002)
-        print 'GPIO.output(pin, 1)'
         GPIO.output(pin, 1)
-        print 'time.sleep(0.000005)'
         time.sleep(0.000005)
-        print 'GPIO.output(pin, 0)'
         GPIO.output(pin, 0)
-        print ' GPIO.setup(pin, GPIO.IN)'
-        GPIO.setup(pin, GPIO.IN)
-        print ' while GPIO.input(pin) == 0:'
-        while GPIO.input(pin) == 0:
+        x = 0
+        while GPIO.input(pin) == 0 and x < self.max_cpu_iterations:
+            GPIO.setup(pin, GPIO.IN)
             start_time = time.time()
-        print 'while GPIO.input(pin) == 1:'
-        while GPIO.input(pin) == 1:
+            x+=1
+        x=0
+        while GPIO.input(pin) == 1 and x < self.max_cpu_iterations:
+            GPIO.setup(pin, GPIO.IN)
             end_time = time.time()
-        print 'duration = end_time - start_time'
+            x+=1
         duration = end_time - start_time
         distance = ((duration * 34000 / 2)* 0.3937)
         return distance
@@ -162,20 +150,12 @@ class SonarController:
 
     def run(self):
         while self.run_thread:
-            print 'time.sleep(float(self.update_time_interval))'
             time.sleep(float(self.update_time_interval))
-            print 'self.read_sonar_distances(self.front_left_sonar_pin)'
             self.front_left_sonar_distance = self.read_sonar_distances(self.front_left_sonar_pin)
-            time.sleep(.0002)
-            print 'self.read_sonar_distances(self.front_middle_sonar_pin)'
-            self.front_middle_sonar_distance = self.read_sonar_distances(self.front_middle_sonar_pin)
-            time.sleep(.0002)
-            print 'self.read_sonar_distances(self.front_right_sonar_pin)'
             self.front_right_sonar_distance = self.read_sonar_distances(self.front_right_sonar_pin)
             time.sleep(.0002)
-            print 'self.read_sonar_distances(self.middle_back_sonar_pin)'
+            self.front_middle_sonar_distance = self.read_sonar_distances(self.front_middle_sonar_pin)
             self.middle_back_sonar_distance = self.read_sonar_distances(self.middle_back_sonar_pin)
-            time.sleep(.0002)
 
     # endregion
 
@@ -185,7 +165,6 @@ class SonarController:
         self.thread = threading.Thread(target=self.run, args=())
         # FIND A WAY TO TEST PINS
         try:
-            #None
             GPIO.setmode(GPIO.BOARD)
         except:
             logging.error('Couldn\'t set GPIO mode')
@@ -203,15 +182,11 @@ class SonarController:
             elif child.attrib['name'] == 'front_middle_sonar_pin': self.front_middle_sonar_pin = int(child.attrib['value'])
             elif child.attrib['name'] == 'front_right_sonar_pin': self.front_right_sonar_pin = int(child.attrib['value'])
             elif child.attrib['name'] == 'middle_back_sonar_pin': self.middle_back_sonar_pin = int(child.attrib['value'])
+            elif child.attrib['name'] == 'max_cpu_iterations': self.max_cpu_iterations = int(child.attrib['value'])
             else: logging.info('Invalid line in sonar config: ', child.attrib['name'])
 
     def save_settings(self):
-        cfg_file = open('info/Sonar/Config.txt', 'w')
-        cfg_file.writelines(('update_time_interval=', self.update_time_interval))
-        cfg_file.writelines(('front_left_sonar_pin=', self.front_left_sonar_pin))
-        cfg_file.writelines(('front_middle_sonar_pin=', self.front_middle_sonar_pin))
-        cfg_file.writelines(('front_right_sonar_pin=', self.front_right_sonar_pin))
-        cfg_file.writelines(('middle_back_sonar_pin=', self.middle_back_sonar_pin))
+        None
 
     def print_settings(self):
         print ' SONAR CONTROLLER SETTINGS'
@@ -296,3 +271,8 @@ class SonarController:
             self.parse_terminal_command(cmd)
         self.return_to_main_menu = False
         return
+
+if __name__ == "__main__":
+    sc = SonarController()
+    sc.start_sonar_thread()
+    sc.terminal()

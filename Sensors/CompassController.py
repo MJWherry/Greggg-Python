@@ -1,4 +1,7 @@
-import hmc5883l
+try:
+    import hmc5883l
+except:
+    None
 import logging
 import os
 import threading
@@ -11,16 +14,19 @@ class CompassController:
     # region Variables
 
     # region I2C settings
-    i2c_port = 0
-    i2c_bus_address = 0x00
+    i2c_port = 1
+    i2c_bus_address = 0x1E
     # endregion
 
     # region Compass settings
-    compass = hmc5883l
+    try:
+        compass = hmc5883l
+    except:
+        None
     gauss = 0
-    declination_degrees = 0
-    declination_minutes = 0
-    update_time_interval = 0
+    declination_degrees = -9
+    declination_minutes = 23
+    update_time_interval = 0.5
     current_heading = None
     # endregion
 
@@ -99,40 +105,37 @@ class CompassController:
 
     # region Printers
     def print_gauss(self):
-        print 'Gauss: ', self.gauss
+        print 'Gauss: {}'.format(self.gauss)
 
     def print_declination(self):
-        print 'Declination: ', self.get_declination()
+        print 'Declination: {}'.format(self.get_declination())
 
     def print_declination_degrees(self):
-        print 'Declination degrees: ', self.declination_degrees
+        print 'Declination degrees: {}'.format(self.declination_degrees)
 
     def print_declination_minutes(self):
-       print 'Declination minutes: ', self.declination_minutes
+        print 'Declination minutes: {}'.format(self.declination_minutes)
 
     def print_update_time_interval(self):
-        print 'Update time interval: ', self.update_time_interval
+        print 'Update time interval: {}'.format(self.update_time_interval)
 
     def print_i2c_port(self):
-        print 'I2C port: ', self.i2c_port
+        print 'I2C port: {}'.format(self.i2c_port)
 
     def print_i2c_bus_address(self):
-        print 'I2C bus address: ', self.i2c_bus_address
+        print 'I2C bus address: {}'.format(self.i2c_bus_address)
 
     def print_x_axes(self):
-        print 'X-Axis: ', self.compass.axes()[0]
+        print 'X-Axis: {}'.format(self.compass.axes()[0])
 
     def print_y_axes(self):
-        print 'Y-Axes: ', self.compass.axes()[1]
+        print 'Y-Axes: {}'.format(self.compass.axes()[1])
 
     def print_z_axes(self):
-        print 'Z-Axes: ', self.compass.axes()[2]
+        print 'Z-Axes: {}'.format(self.compass.axes()[2])
 
     def print_heading(self):
-        print 'Heading: ', self.compass.degrees(self.compass.heading())
-
-    def print_compass_object(self):
-        print 'Compass object: ', self.compass
+        print 'Heading: {}'.format(self.compass.degrees(self.compass.heading()))
 
     # endregion
 
@@ -168,11 +171,17 @@ class CompassController:
 
     def __init__(self):
         self.load_settings()
-        self.compass = hmc5883l.hmc5883l(gauss=self.gauss, declination=(self.declination_degrees, self.declination_minutes))
+        try:
+            self.compass = hmc5883l.hmc5883l(gauss=self.gauss, declination=(self.declination_degrees, self.declination_minutes))
+        except:
+            None
         self.thread = threading.Thread(target=self.run, args=())
 
     def load_settings(self):
-        tree = ET.parse('config.xml')
+        try:
+            tree = ET.parse('config.xml')
+        except:
+            return
         root = tree.getroot()
         device = root.find('compass')
         for child in device.iter('terminal_commands'):
@@ -191,13 +200,11 @@ class CompassController:
 
     def print_settings(self):
         print 'COMPASS CONTROLLER SETTINGS'
-        print 'I2C Specific'
-        print 'Port: ', self.i2c_port
-        print 'Bus Address: ', self.i2c_bus_address
-        print '\nCompass Specific'
-        print 'Declination minutes: ', self.declination_minutes
-        print 'Declination degrees: ', self.declination_degrees
-        print 'Gauss: ', self.gauss
+        self.print_i2c_bus_address()
+        self.print_i2c_port()
+        self.print_gauss()
+        self.print_declination()
+        self.print_update_time_interval()
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
@@ -230,22 +237,25 @@ class CompassController:
                 print colored(data, 'green')
 
     def print_menu(self):
+        if self.hide_menu: return
+        bar = colored('|', 'magenta')
         print colored(' {:_^54}'.format(''), 'magenta')
         print ' {:1}{:^61}{:1}'.format(colored('|', 'magenta'), colored('COMPASS TERMINAL', 'white'),
                                        colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
-                                   colored('|', 'magenta'))
-        print ' {} {} {:<43} {}'.format(colored('|', 'magenta'), colored('THREAD:', 'white'),
-                                        colored('RUNNING', 'green') if self.compass_thread_running() else colored(
-                                            'NOT RUNNING', 'red'),
-                                        colored('|', 'magenta'))
+        print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
+        print ' {} {:68} {}'.format(bar,
+                                    colored('THREAD: {}'.format(colored('RUNNING', 'green') if self.compass_thread_running()
+                                                                else colored('NOT RUNNING', 'red')), 'white'), bar)
+        print ' {} {:59} {}'.format(bar,colored('STATUS: {}'.format('is connected? implement'),'white'),bar)
+
+        print ' {} {:34} {:33} {}'.format(bar, colored('I2C PORT: {}'.format(self.i2c_port),'white'), colored('I2C ADDRESS: {}'.format(self.i2c_bus_address),'white'),bar)
+        print ' {} {:34} {:33} {}'.format(bar, colored('DECLINATION MINUTES: {}'.format(self.declination_minutes), 'white'),
+                                          colored('DECLINATION DEGREES: {}'.format(self.declination_degrees), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
-                                   colored('|', 'magenta'))
+        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'),bar)
         for cmd in self.valid_terminal_commands:
-            print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(cmd[0], 'white'), cmd[1],
-                                                  colored('|', 'magenta'))
+            print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(cmd[0], 'white'), cmd[1], bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
@@ -255,3 +265,7 @@ class CompassController:
             cmd = raw_input(colored(' Enter a command: ', 'cyan'))
             self.parse_terminal_command(cmd)
         self.return_to_main_menu = False
+
+if __name__ == "__main__":
+    cc = CompassController()
+    cc.terminal()

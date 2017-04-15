@@ -8,10 +8,10 @@ from termcolor import colored
 class MotorController:
     # region Variables
 
-    # region Motor Variables
+    # region Motor Setting Variables
     serial = None
-    serial_baud_rate = 0
-    serial_port = ''
+    serial_baud_rate = 19200
+    serial_port = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0'
     # endregion
 
     # region ETC Variables
@@ -20,6 +20,7 @@ class MotorController:
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
+
     # endregion
 
     # endregion
@@ -27,14 +28,12 @@ class MotorController:
     # region Accessors/Mutators/Printers
 
     # region Accessors
-    def get_serial(self):
-        return self.serial
-
     def get_serial_port(self):
         return self.serial_port
 
     def get_serial_baud_rate(self):
         return self.serial_baud_rate
+
     # endregion
 
     # region Mutators
@@ -43,29 +42,30 @@ class MotorController:
 
     def set_serial_baud_rate(self, baud_rate):
         self.serial_baud_rate = baud_rate
+
     # endregion
 
     # region Printers
     def print_serial_port(self):
-        print 'Serial port: ', self.serial_port
+        print 'Serial port: {}'.format(self.serial_port)
 
     def print_serial_baud_rate(self):
-        print 'Serial baud rate: ', self.serial_baud_rate
+        print 'Serial baud rate: {}'.format(self.serial_baud_rate)
+
     # endregion
 
     # endregion
 
     # region Motor functions
     def is_connected(self):
-        return False if self.serial is None or self.serial.closed else True
+        if self.serial is None: return False
+        return self.serial.is_open
 
     def connect(self):
-        logging.info('Trying to connect to the motor hardware.')
         try:
             self.serial = serial.Serial(self.serial_port, self.serial_baud_rate)
-            logging.info('Motor hardware connected.')
         except:
-            logging.error('Could not establish a connection to the motor hardware.')
+            None
 
     def check_motor_command(self, cmd):
         cmd_base = cmd.split()[0]
@@ -82,22 +82,23 @@ class MotorController:
                     param_number = 0
                     for parameter_range in command[2]:
                         return True
-                        param_number+=1
+                        param_number += 1
                         return True
                 else:
                     return False
         return valid
 
-    def run_motor_command(self,cmd):
-        if self.check_motor_command(cmd):
-            print colored(' Sending command...', 'yellow')
-            try:
-                self.serial.write(cmd + '\r')
-                print colored(' Command sent.', 'green')
-            except:
-                print colored(' Command not sent.', 'red')
-        else:
-            print colored(' Invalid motor command syntax.', 'red')
+    def run_motor_command(self, cmd):
+        # if self.check_motor_command(cmd):
+        print colored(' Sending command...', 'yellow')
+        try:
+            self.serial.write(cmd + '\r')
+            print colored(' Command sent.', 'green')
+            return True
+        except:
+            print colored(' Command not sent.', 'red')
+            return False
+
     # endregion
 
     def __init__(self):
@@ -105,25 +106,26 @@ class MotorController:
         self.connect()
 
     def load_settings(self):
-        tree = ET.parse('config.xml')
+        try:
+            tree = ET.parse('config.xml')
+        except:
+            return
         root = tree.getroot()
         device = root.find('motor')
-
         for child in device.iter('hardware_commands'):
             for command in child.iter('command'):
                 valid_command = (command.attrib['name'], command.attrib['parameter_count'], [])
                 for parameter in command.iter('parameter'):
                     valid_command[2].append((parameter.attrib['description'], parameter.attrib['range']))
                 self.valid_motor_commands.append(valid_command)
-
         for child in device.iter('terminal_commands'):
             for command in child.iter('command'):
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
-
         for child in device.iter('setting'):
-            if child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
-            elif child.attrib['name'] == 'serial_port': self.serial_port = child.attrib['value']
-
+            if child.attrib['name'] == 'serial_baud_rate':
+                self.serial_baud_rate = int(child.attrib['value'])
+            elif child.attrib['name'] == 'serial_port':
+                self.serial_port = child.attrib['value']
 
     def save_settings(self):
         None
@@ -148,33 +150,28 @@ class MotorController:
             self.return_to_main_menu = True
         elif cmd == 'q':
             exit(0)
-        else: self.run_motor_command(cmd)
+        else:
+            self.run_motor_command(cmd)
 
     def print_menu(self):
         if self.hide_menu: return
-        print colored(' {:_^54}'.format(''), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('MOTOR CONTROLLER TERMINAL', 'white'),
-                                   colored('|', 'magenta'))
-        print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
-                                   colored('|', 'magenta'))
-        print ' {} {} {:<51} {}'.format(colored('|', 'magenta'), colored('STATUS:', 'white'),
-                                        colored('CONNECTED', 'green') if self.is_connected() else colored('DISCONNECTED',
-                                                                                                         'red'),
-                                        colored('|', 'magenta'))
 
-        print colored(' {} {} {:<41}{} {}'.format('|', 'PORT:', self.serial_port[:41], '...', '|'), 'magenta')
-        print colored(' {} {} {:<40} {}'.format('|', 'BAUDRATE:', self.serial_baud_rate, '|'), 'magenta')
+        bar = colored('|', 'magenta')
+
+        print colored(' {:_^54}'.format(''), 'magenta')
+        print ' {}{:^61}{}'.format(bar, colored('MOTOR CONTROLLER TERMINAL', 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
-                                   colored('|', 'magenta'))
+        print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('STATUS: {}'.format(colored('CONNECTED', 'green') if self.is_connected() else colored('DISCONNECTED','red')), 'white'),bar)
+        print ' {} {:59} {}'.format(bar, colored('PORT: {}'.format(self.serial_port[:41])+'...','white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('BAUD RATE: {}'.format(self.serial_baud_rate),'white'), bar)
+        print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
+        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for command in self.valid_terminal_commands:
             if len(command[0]) is 1:
-                print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(command[0], 'white'), command[1],
-                                                      colored('|', 'magenta'))
+                print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(command[0], 'white'), command[1],bar)
             else:
-                print ' {} \'{:^3}\' {:44} {}'.format(colored('|', 'magenta'), colored(command[0], 'white'), command[1],
-                                                      colored('|', 'magenta'))
+                print ' {} \'{:^3}\' {:44} {}'.format(bar, colored(command[0], 'white'), command[1], bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
@@ -185,3 +182,8 @@ class MotorController:
             self.parse_terminal_command(cmd)
         self.return_to_main_menu = False
         return
+
+
+if __name__ == "__main__":
+    mc = MotorController()
+    mc.terminal()

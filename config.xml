@@ -45,6 +45,7 @@
         <settings>
             <setting name="serial_port" value="/dev/ttyS0" />
             <setting name="serial_baud_rate" value="9600" />
+            <setting name="update_time_interval" value="0.5" />
         </settings>
         <hardware_commands>
         </hardware_commands>
@@ -99,11 +100,12 @@
     </motor>
     <sonar>
         <settings>
-            <setting name="update_time_interval" value="0.5" />
+            <setting name="update_time_interval" value="0.2" />
             <setting name="front_left_sonar_pin" value="37" />
             <setting name="front_middle_sonar_pin" value="35" />
             <setting name="front_right_sonar_pin" value="33" />
             <setting name="middle_back_sonar_pin" value="31" />
+	    <setting name="max_cpu_iterations" value="100000" />
         </settings>
         <hardware_commands>
         </hardware_commands>

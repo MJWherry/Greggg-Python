@@ -1,0 +1,22 @@
+GPVTG,
+(('True Track made good', 'true_track', <type 'float'>), ('True Track made good symbol', 'true_track_sym'), ('Magnetic Track made good', 'mag_track', <class 'decimal.Decimal'>), ('Magnetic Track symbol', 'mag_track_sym'), ('Speed over ground knots', 'spd_over_grnd_kts', <class 'decimal.Decimal'>), ('Speed over ground symbol', 'spd_over_grnd_kts_sym'), ('Speed over ground kmph', 'spd_over_grnd_kmph', <type 'float'>), ('Speed over ground kmph symbol', 'spd_over_grnd_kmph_sym'), ('FAA mode indicator', 'faa_mode'))
+[u'', u'', u'', u'', u'', u'', u'', u'', u'N']
+
+GPGGA,
+18:42:41
+(('Timestamp', 'timestamp', <function timestamp at 0x768cf9b0>), ('Latitude', 'lat'), ('Latitude Direction', 'lat_dir'), ('Longitude', 'lon'), ('Longitude Direction', 'lon_dir'), ('GPS Quality Indicator', 'gps_qual', <type 'int'>), ('Number of Satellites in use', 'num_sats'), ('Horizontal Dilution of Precision', 'horizontal_dil'), ('Antenna Alt above sea level (mean)', 'altitude', <type 'float'>), ('Units of altitude (meters)', 'altitude_units'), ('Geoidal Separation', 'geo_sep'), ('Units of Geoidal Separation (meters)', 'geo_sep_units'), ('Age of Differential GPS Data (secs)', 'age_gps_data'), ('Differential Reference Station ID', 'ref_station_id'))
+[u'184241.00', u'', u'', u'', u'', u'0', u'00', u'99.99', u'', u'', u'', u'', u'', u'']
+
+GPGSA,
+(('Mode', 'mode'), ('Mode fix type', 'mode_fix_type'), ('SV ID01', 'sv_id01'), ('SV ID02', 'sv_id02'), ('SV ID03', 'sv_id03'), ('SV ID04', 'sv_id04'), ('SV ID05', 'sv_id05'), ('SV ID06', 'sv_id06'), ('SV ID07', 'sv_id07'), ('SV ID08', 'sv_id08'), ('SV ID09', 'sv_id09'), ('SV ID10', 'sv_id10'), ('SV ID11', 'sv_id11'), ('SV ID12', 'sv_id12'), ('PDOP (Dilution of precision)', 'pdop'), ('HDOP (Horizontal DOP)', 'hdop'), ('VDOP (Vertical DOP)', 'vdop'))
+[u'A', u'1', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'99.99', u'99.99', u'99.99']
+
+GPGLL,
+18:42:41
+(('Latitude', 'lat'), ('Latitude Direction', 'lat_dir'), ('Longitude', 'lon'), ('Longitude Direction', 'lon_dir'), ('Timestamp', 'timestamp', <function timestamp at 0x768cf9b0>), ('Status', 'status'), ('FAA mode indicator', 'faa_mode'))
+[u'', u'', u'', u'', u'184241.00', u'V', u'N']
+
+GPRMC,
+18:42:42
+(('Timestamp', 'timestamp', <function timestamp at 0x768cf9b0>), ('Status', 'status'), ('Latitude', 'lat'), ('Latitude Direction', 'lat_dir'), ('Longitude', 'lon'), ('Longitude Direction', 'lon_dir'), ('Speed Over Ground', 'spd_over_grnd', <type 'float'>), ('True Course', 'true_course', <type 'float'>), ('Datestamp', 'datestamp', <function datestamp at 0x768cf9f0>), ('Magnetic Variation', 'mag_variation'), ('Magnetic Variation Direction', 'mag_var_dir'))
+[u'184242.00', u'V', u'', u'', u'', u'', u'', u'', u'130417', u'', u'', u'N']

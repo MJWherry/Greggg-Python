@@ -44,9 +44,10 @@ class Driver:
         self.sc.start_sonar_thread()
         self.gc.start_gps_thread()
         self.cc.start_compass_thread()
+        self.bc.start_server_thread()
 
         # Start the terminal
-        self.terminal()
+
 
     def load_settings(self):
         tree = ET.parse('config.xml')
@@ -123,13 +124,6 @@ class Driver:
         elif cmd == 'bct':
             self.bc.terminal(), self.parse_terminal_command('c')
 
-        elif cmd == '1':
-            self.sc.restart_sonar_thread()
-        elif cmd == '2':
-            self.sc.stop_sonar_thread()
-
-        elif cmd == 'con':
-            self.bc.setup()
         elif cmd == 'h':
             if self.hide_menu:
                 self.hide_menu = False
@@ -161,5 +155,6 @@ class Driver:
             cmd = raw_input(colored(' Enter an option: ', 'cyan'))
             self.parse_terminal_command(cmd)
 
-
-d = Driver()
+if __name__ == "__main__":
+    d = Driver()
+    d.terminal()
