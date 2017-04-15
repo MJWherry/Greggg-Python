@@ -118,14 +118,33 @@ class SonarController:
             GPIO.setup(pin, GPIO.IN)
             start_time = time.time()
             x+=1
+        if x >= self.max_cpu_iterations:
+            return 0, False
         x=0
         while GPIO.input(pin) == 1 and x < self.max_cpu_iterations:
             GPIO.setup(pin, GPIO.IN)
             end_time = time.time()
             x+=1
+        if x >= self.max_cpu_iterations:
+            return 0, False
         duration = end_time - start_time
         distance = ((duration * 34000 / 2)* 0.3937)
-        return distance
+        return distance, True
+
+    def update_sonar_distances(self):
+        update = self.read_sonar_distances(self.front_left_sonar_pin)
+        if update[1]:
+            self.front_left_sonar_distance = update[0]
+        update = self.read_sonar_distances(self.front_right_sonar_pin)
+        if update[1]:
+            self.front_right_sonar_distance = update[0]
+        time.sleep(.0002)
+        update = self.read_sonar_distances(self.front_middle_sonar_pin)
+        if update[1]:
+            self.front_middle_sonar_distance = update[0]
+        update = self.read_sonar_distances(self.middle_back_sonar_pin)
+        if update[1]:
+            self.middle_back_sonar_distance = update[0]
 
     # endregion
 
@@ -143,7 +162,6 @@ class SonarController:
 
     def restart_sonar_thread(self):
         print 'Waiting thread...'
-        threading._sleep(10)
         print 'Resuming thread...'
 
         # Implement (how)
@@ -151,11 +169,8 @@ class SonarController:
     def run(self):
         while self.run_thread:
             time.sleep(float(self.update_time_interval))
-            self.front_left_sonar_distance = self.read_sonar_distances(self.front_left_sonar_pin)
-            self.front_right_sonar_distance = self.read_sonar_distances(self.front_right_sonar_pin)
-            time.sleep(.0002)
-            self.front_middle_sonar_distance = self.read_sonar_distances(self.front_middle_sonar_pin)
-            self.middle_back_sonar_distance = self.read_sonar_distances(self.middle_back_sonar_pin)
+            self.update_sonar_distances()
+
 
     # endregion
 
@@ -214,7 +229,7 @@ class SonarController:
         elif type == 'set':
             None
         elif type == 'print' or split[0] == 'get':
-            data=''
+            data = ' '
             for cmd in split:
                 if cmd == 'fl' or cmd == 'frontleft' or cmd == 'front_left':
                     data += str(self.front_left_sonar_distance) + ','
@@ -224,6 +239,8 @@ class SonarController:
                     data += str(self.front_right_sonar_distance) + ','
                 elif cmd == 'mb' or cmd == 'middleback' or cmd == 'middle_back':
                     data += str(self.middle_back_sonar_distance) + ','
+                elif cmd == 'update_time_interval' or cmd == 'interval':
+                    data += str(self.update_time_interval + ',')
                 elif cmd == 'all':
                     data += str('{},{},{},{}'.format(self.front_middle_sonar_distance, self.front_left_sonar_distance,
                          self.middle_back_sonar_distance, self.front_right_sonar_distance)) + ','

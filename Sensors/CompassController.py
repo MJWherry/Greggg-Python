@@ -4,6 +4,7 @@ except:
     None
 import logging
 import os
+import sys
 import threading
 import time
 import xml.etree.ElementTree as ET
@@ -208,8 +209,9 @@ class CompassController:
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
-        split = cmd.split()
-        type = split[0]
+        type = cmd.split()[0]
+        parameters = cmd.replace(type,'').split()
+
         if cmd == 'c':
             os.system(self.clear)
             self.print_menu()
@@ -224,12 +226,15 @@ class CompassController:
         elif cmd == 'q':
             exit(0)
         elif type == 'get' or type == 'print':
-            data = ''
-            for cmd in split:
-                if cmd == 'heading':
-                    data += str(self.get_heading()) + ','
-                elif cmd == 'declination':
-                    data += str(self.get_declination()) + ','
+            data = ' '
+            for cmd in parameters:
+                if cmd == 'heading': data += str(self.get_heading()) + ','
+                elif cmd == 'declination_degrees': data += str(self.declination_degrees) + ','
+                elif cmd == 'declination_minutes': data += str(self.declination_minutes) + ','
+                elif cmd == 'declination': data += str(self.get_declination()) + ','
+                elif cmd == 'update_time_interval' or cmd == 'interval': data += str(self.update_time_interval) + ','
+                elif cmd == 'i2c_bus_address' or cmd == 'i2c_addr': data += str(format(self.i2c_bus_address,'#04x')) + ','
+                elif cmd == 'i2c_bus_port' or cmd == 'i2c_port': data += str(self.i2c_port) + ','
             data = data[:-1] + ';'
             if type == 'get':
                 return data
@@ -247,19 +252,20 @@ class CompassController:
         print ' {} {:68} {}'.format(bar,
                                     colored('THREAD: {}'.format(colored('RUNNING', 'green') if self.compass_thread_running()
                                                                 else colored('NOT RUNNING', 'red')), 'white'), bar)
-        print ' {} {:59} {}'.format(bar,colored('STATUS: {}'.format('is connected? implement'),'white'),bar)
-
-        print ' {} {:34} {:33} {}'.format(bar, colored('I2C PORT: {}'.format(self.i2c_port),'white'), colored('I2C ADDRESS: {}'.format(self.i2c_bus_address),'white'),bar)
-        print ' {} {:34} {:33} {}'.format(bar, colored('DECLINATION MINUTES: {}'.format(self.declination_minutes), 'white'),
+        print ' {} {:59} {}'.format(bar, colored('STATUS: {}'.format('is connected? implement'), 'white'), bar)
+        print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
+        print ' {} {:33} {:34} {}'.format(bar, colored('I2C PORT: {}'.format(self.i2c_port),'white'), colored('I2C ADDRESS: {}'.format(self.i2c_bus_address),'white'),bar)
+        print ' {} {:33} {:34} {}'.format(bar, colored('DECLINATION MINUTES: {}'.format(self.declination_minutes), 'white'),
                                           colored('DECLINATION DEGREES: {}'.format(self.declination_degrees), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'),bar)
+        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:
             print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(cmd[0], 'white'), cmd[1], bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
         os.system(self.clear)
+        # sys.stdout.write("\x1b]2;Compass Controller Terminal\x07")
         self.print_menu()
         while not self.return_to_main_menu:
             cmd = raw_input(colored(' Enter a command: ', 'cyan'))

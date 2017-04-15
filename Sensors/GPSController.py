@@ -228,7 +228,7 @@ class GPSController:
         elif cmd == 'q':
             exit(0)
         elif type == 'print' or cmd[0] == 'get':
-            data = ''
+            data = ' '
             for cmd in split:
                 if cmd == 'latitude' or cmd == 'lat':
                     data += str(self.latitude) + ','
