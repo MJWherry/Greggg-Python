@@ -148,8 +148,11 @@ class CompassController:
 
     # region Thread Functions
     def start_compass_thread(self):
-        self.run_thread = True
-        self.thread.start()
+        try:
+            self.thread.start()
+            self.run_thread = True
+        except:
+            None
 
     def compass_thread_running(self):
         if self.thread is None: return False
@@ -249,14 +252,13 @@ class CompassController:
                                        colored('|', 'magenta'))
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
-        print ' {} {:68} {}'.format(bar,
-                                    colored('THREAD: {}'.format(colored('RUNNING', 'green') if self.compass_thread_running()
-                                                                else colored('NOT RUNNING', 'red')), 'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('STATUS: {}'.format('is connected? implement'), 'white'), bar)
-        print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {:33} {:34} {}'.format(bar, colored('I2C PORT: {}'.format(self.i2c_port),'white'), colored('I2C ADDRESS: {}'.format(self.i2c_bus_address),'white'),bar)
         print ' {} {:33} {:34} {}'.format(bar, colored('DECLINATION MINUTES: {}'.format(self.declination_minutes), 'white'),
                                           colored('DECLINATION DEGREES: {}'.format(self.declination_degrees), 'white'), bar)
+        print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
+        print ' {} {:68} {}'.format(bar, colored('THREAD: {}'.format(
+            colored('RUNNING', 'green') if self.compass_thread_running() else colored('NOT RUNNING', 'red')), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:

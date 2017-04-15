@@ -4,21 +4,20 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 
-import RPi.GPIO as GPIO #
+try: import RPi.GPIO as GPIO
+except: None
 from termcolor import colored
-
-#GPIO = None
 
 class SonarController:
     # region Variables
 
     # region GPIO Pin Numbers
-    front_left_sonar_pin = 0
-    front_middle_sonar_pin = 0
-    front_right_sonar_pin = 0
-    middle_back_sonar_pin = 0
-    update_time_interval = 0
-    max_cpu_iterations = 0
+    front_left_sonar_pin = 37
+    front_middle_sonar_pin = 35
+    front_right_sonar_pin = 33
+    middle_back_sonar_pin = 31
+    update_time_interval = 0.2
+    max_cpu_iterations = 100000
     # endregion
 
     # region Distances
@@ -69,31 +68,31 @@ class SonarController:
 
     # region Printers
     def print_update_time_interval(self):
-        print ' {:<25} {:<15}'.format('Update time interval:', self.update_time_interval)
+        print ' {:25} {}'.format('Update time interval:', self.update_time_interval)
 
     def print_front_left_sonar_pin(self):
-        print ' {:<25} {:<15}'.format('Front left sonar pin:', self.front_left_sonar_pin)
+        print ' {:25} {}'.format('Front left sonar pin:', self.front_left_sonar_pin)
 
     def print_front_middle_sonar_pin(self):
-        print ' {:<25} {:<15}'.format('Front middle sonar pin:', self.front_middle_sonar_pin)
+        print ' {:25} {}'.format('Front middle sonar pin:', self.front_middle_sonar_pin)
 
     def print_front_right_sonar_pin(self):
-        print ' {:<25} {:<15}'.format('Front right sonar pin:', self.front_right_sonar_pin)
+        print ' {:25} {}'.format('Front right sonar pin:', self.front_right_sonar_pin)
 
     def print_middle_back_sonar_pin(self):
-        print ' {:<25} {:<15}'.format('Middle back sonar pin:', self.middle_back_sonar_pin)
+        print ' {:25} {}'.format('Middle back sonar pin:', self.middle_back_sonar_pin)
 
     def print_front_left_sonar_distance(self):
-        print ' {:<25} {:<15}'.format('Front left sonar distance:', self.front_left_sonar_distance)
+        print ' {:25} {}'.format('Front left sonar distance:', self.front_left_sonar_distance)
 
     def print_front_middle_sonar_distance(self):
-        print ' {:<25} {:<15}'.format('Front middle sonar distance:', self.front_middle_sonar_distance)
+        print ' {:25} {}'.format('Front middle sonar distance:', self.front_middle_sonar_distance)
 
     def print_front_right_sonar_distance(self):
-        print ' {:<25} {:<15}'.format('Front right sonar distance:', self.front_right_sonar_distance)
+        print ' {:25} {}'.format('Front right sonar distance:', self.front_right_sonar_distance)
 
     def print_middle_back_sonar_distance(self):
-        print ' {:<25} {:<15}'.format('Middle back sonar distance:', self.middle_back_sonar_distance)
+        print ' {:25} {}'.format('Middle back sonar distance:', self.middle_back_sonar_distance)
 
     def print_all_sonar_distances(self):
         self.print_front_left_sonar_distance()
@@ -117,18 +116,18 @@ class SonarController:
         while GPIO.input(pin) == 0 and x < self.max_cpu_iterations:
             GPIO.setup(pin, GPIO.IN)
             start_time = time.time()
-            x+=1
+            x += 1
         if x >= self.max_cpu_iterations:
             return 0, False
-        x=0
+        x = 0
         while GPIO.input(pin) == 1 and x < self.max_cpu_iterations:
             GPIO.setup(pin, GPIO.IN)
             end_time = time.time()
-            x+=1
+            x += 1
         if x >= self.max_cpu_iterations:
             return 0, False
         duration = end_time - start_time
-        distance = ((duration * 34000 / 2)* 0.3937)
+        distance = ((duration * 34000 / 2) * 0.3937)
         return distance, True
 
     def update_sonar_distances(self):
@@ -150,8 +149,11 @@ class SonarController:
 
     # region Thread Functions
     def start_sonar_thread(self):
-        self.run_thread = True
-        self.thread.start()
+        try:
+            self.thread.start()
+            self.run_thread = True
+        except:
+            None
 
     def sonar_thread_running(self):
         return threading.Thread.isAlive(self.thread)
@@ -161,8 +163,8 @@ class SonarController:
         # Test implementation
 
     def restart_sonar_thread(self):
-        print 'Waiting thread...'
-        print 'Resuming thread...'
+        None
+        # Implement
 
         # Implement (how)
 
@@ -182,10 +184,13 @@ class SonarController:
         try:
             GPIO.setmode(GPIO.BOARD)
         except:
-            logging.error('Couldn\'t set GPIO mode')
+            None
 
     def load_settings(self):
-        tree = ET.parse('config.xml')
+        try:
+            tree = ET.parse('config.xml')
+        except:
+            return
         root = tree.getroot()
         device = root.find('sonar')
         for child in device.iter('terminal_commands'):
@@ -198,18 +203,27 @@ class SonarController:
             elif child.attrib['name'] == 'front_right_sonar_pin': self.front_right_sonar_pin = int(child.attrib['value'])
             elif child.attrib['name'] == 'middle_back_sonar_pin': self.middle_back_sonar_pin = int(child.attrib['value'])
             elif child.attrib['name'] == 'max_cpu_iterations': self.max_cpu_iterations = int(child.attrib['value'])
-            else: logging.info('Invalid line in sonar config: ', child.attrib['name'])
 
     def save_settings(self):
         None
 
     def print_settings(self):
-        print ' SONAR CONTROLLER SETTINGS'
+        print ' SONAR SETTINGS'
         self.print_update_time_interval()
         self.print_front_left_sonar_pin()
         self.print_front_middle_sonar_pin()
         self.print_front_right_sonar_pin()
         self.print_middle_back_sonar_pin()
+
+    def get_settings(self):
+        data = 'SONAR_SETTINGS{'\
+               +'UPDATE_TIME_INTERVAL('+str(self.get_update_time_interval())+'),'\
+               + 'FRONT_LEFT_SONAR_PIN('+str(self.front_left_sonar_pin)+'),'\
+               + 'FRONT_MIDDLE_SONAR_PIN('+str(self.front_middle_sonar_pin)+'),'\
+               + 'FRONT_RIGHT_SONAR_PIN('+str(self.front_left_sonar_pin)+'),'\
+               + 'MIDDLE_BACK_SONAR_PIN('+str(self.middle_back_sonar_pin)+')'\
+               +'}'
+        return data
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
@@ -240,7 +254,9 @@ class SonarController:
                 elif cmd == 'mb' or cmd == 'middleback' or cmd == 'middle_back':
                     data += str(self.middle_back_sonar_distance) + ','
                 elif cmd == 'update_time_interval' or cmd == 'interval':
-                    data += str(self.update_time_interval + ',')
+                    data += str(self.update_time_interval) + ','
+                elif cmd == 'settings':
+                    data+= self.get_settings() + ','
                 elif cmd == 'all':
                     data += str('{},{},{},{}'.format(self.front_middle_sonar_distance, self.front_left_sonar_distance,
                          self.middle_back_sonar_distance, self.front_right_sonar_distance)) + ','
@@ -252,28 +268,23 @@ class SonarController:
 
     def print_menu(self):
         if self.hide_menu: return
+        bar = colored('|', 'magenta')
         print colored(' {:_^54}'.format(''), 'magenta')
-        print ' {:1}{:^61}{:1}'.format(colored('|', 'magenta'), colored('SONAR TERMINAL', 'white'),
-                                       colored('|', 'magenta'))
+        print ' {} {:^59} {}'.format(bar, colored('SONAR TERMINAL', 'white'),bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
-                                   colored('|', 'magenta'))
-        print ' {} {} {:<51} {}'.format(colored('|', 'magenta'), colored('THREAD:', 'white'),
-                                        colored('RUNNING', 'green') if self.sonar_thread_running() else colored(
-                                            'NOT RUNNING', 'red'), colored('|', 'magenta'))
+        print ' {} {:^59} {}'.format(bar, colored('CONNECTION INFORMATION', 'white'),bar)
+        print ' {} {:59} {}'.format(bar, colored('STATUS: {}'.format('is connected? implement'), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('UPDATE TIME INTERVAL: {}'.format(self.update_time_interval), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('FRONT LEFT PIN: {}'.format(self.front_left_sonar_pin), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('FRONT MIDDLE PIN: {}'.format(self.front_middle_sonar_pin), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('FRONT RIGHT PIN: {}'.format(self.front_right_sonar_pin), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('MIDDLE BACK SONAR PIN: {}'.format(self.middle_back_sonar_pin), 'white'), bar)
         print colored(' {}{: ^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {} {:<37} {}'.format(colored('|', 'magenta'), colored('UPDATE TIME INTERVAL:', 'white'),
-                                        colored(self.update_time_interval, 'white'), colored('|', 'magenta'))
-        print ' {} {} {:<43} {}'.format(colored('|', 'magenta'), colored('FRONT LEFT PIN:', 'white'),
-                                        colored(self.front_left_sonar_pin,'white'), colored('|', 'magenta'))
-        print ' {} {} {:<41} {}'.format(colored('|', 'magenta'), colored('FRONT MIDDLE PIN:', 'white'),
-                                        colored(self.front_middle_sonar_pin, 'white'), colored('|', 'magenta'))
-        print ' {} {} {:<42} {}'.format(colored('|', 'magenta'), colored('FRONT RIGHT PIN:', 'white'),
-                                        colored(self.front_right_sonar_pin, 'white'), colored('|', 'magenta'))
-        print ' {} {} {:<36} {}'.format(colored('|', 'magenta'), colored('MIDDLE BACK SONAR PIN:', 'white'),
-                                        colored(self.middle_back_sonar_pin, 'white'), colored('|', 'magenta'))
+        print ' {} {:68} {}'.format(bar, colored(
+            'THREAD: {}'.format(colored('RUNNING', 'green') if self.sonar_thread_running() else colored(
+                'NOT RUNNING', 'red')), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
+        print ' {} {:^59} {}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
                                    colored('|', 'magenta'))
         for cmd in self.valid_terminal_commands:
             print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(cmd[0], 'white'), cmd[1],
@@ -291,5 +302,4 @@ class SonarController:
 
 if __name__ == "__main__":
     sc = SonarController()
-    sc.start_sonar_thread()
     sc.terminal()

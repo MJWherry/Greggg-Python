@@ -150,8 +150,11 @@ class GPSController:
 
     # region Thread Functions
     def start_gps_thread(self):
-        self.run_thread = True
-        self.thread.start()
+        try:
+            self.thread.start()
+            self.run_thread = True
+        except:
+            None
 
     def gps_thread_running(self):
         if not self.run_thread:
@@ -194,11 +197,9 @@ class GPSController:
             for command in child.iter('command'):
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
         for child in device.iter('setting'):
-            if child.attrib['name'] == 'serial_port':
-                self.serial_port = str(child.attrib['value'])
-            elif child.attrib['name'] == 'serial_baud_rate':
-                self.serial_baud_rate = int(child.attrib['value'])
-            elif child.attrib['name'] == 'update_time_interval': self.update_time_interval = int(child.attrib['value'])
+            if child.attrib['name'] == 'serial_port': self.serial_port = str(child.attrib['value'])
+            elif child.attrib['name'] == 'serial_baud_rate': self.serial_baud_rate = int(child.attrib['value'])
+            elif child.attrib['name'] == 'update_time_interval': self.update_time_interval = float(child.attrib['value'])
 
     def save_settings(self):
         None
@@ -244,6 +245,12 @@ class GPSController:
                     data += str(self.time + ',')
                 elif cmd == 'all' or cmd == 'position' or cmd == 'pos':
                     data += str(self.get_position()) + ','
+                elif cmd == 'serial_port' or cmd == 'port':
+                    data += str(self.serial_port) + ','
+                elif cmd == 'serial_baud_rate' or cmd == 'baud_rate':
+                    data += str(self.serial_baud_rate)
+                elif cmd == 'update_time_interval' or cmd == 'interval':
+                    data += str(self.update_time_interval) + ','
             data = data[:-1] + ';'
             if type == 'get':
                 return data
@@ -258,11 +265,14 @@ class GPSController:
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
         print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
-        print ' {} {:68} {}'.format(bar,
-                                    colored('THREAD: {}'.format(colored('RUNNING', 'green') if self.gps_thread_running()
-                                    else colored('NOT RUNNING', 'red')), 'white'), bar)
+
+        print ' {} {:59} {}'.format(bar, colored('STATUS: {}'.format('is connected? implement'), 'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('PORT: {}'.format(self.serial_port),'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('BAUD RATE: {}'.format(self.serial_baud_rate),'white'), bar)
+        print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
+        print ' {} {:68} {}'.format(bar,
+                                    colored('THREAD: {}'.format(colored('RUNNING', 'green') if self.gps_thread_running()
+                                                                else colored('NOT RUNNING', 'red')), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:

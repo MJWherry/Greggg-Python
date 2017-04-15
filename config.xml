@@ -61,6 +61,7 @@
         <settings>
             <setting name="serial_port" value="/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0" />
             <setting name="serial_baud_rate" value="19200" />
+            <setting name="check_motor_commands" value="False" />
         </settings>
         <hardware_commands>
             <command name="arc" parameter_count="3">
@@ -105,7 +106,7 @@
             <setting name="front_middle_sonar_pin" value="35" />
             <setting name="front_right_sonar_pin" value="33" />
             <setting name="middle_back_sonar_pin" value="31" />
-	    <setting name="max_cpu_iterations" value="100000" />
+	        <setting name="max_cpu_iterations" value="100000" />
         </settings>
         <hardware_commands>
         </hardware_commands>

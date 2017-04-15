@@ -17,6 +17,7 @@ class MotorController:
     # region ETC Variables
     valid_terminal_commands = []
     valid_motor_commands = []
+    check_motor_commands = False
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
@@ -34,6 +35,8 @@ class MotorController:
     def get_serial_baud_rate(self):
         return self.serial_baud_rate
 
+    def get_is_checking_motor_commands(self):
+        return self.check_motor_commands
     # endregion
 
     # region Mutators
@@ -43,15 +46,20 @@ class MotorController:
     def set_serial_baud_rate(self, baud_rate):
         self.serial_baud_rate = baud_rate
 
+    def set_check_motor_commands(self, check):
+        self.check_motor_commands = check
+
     # endregion
 
     # region Printers
     def print_serial_port(self):
-        print 'Serial port: {}'.format(self.serial_port)
+        print ' Serial port: {}'.format(self.serial_port)
 
     def print_serial_baud_rate(self):
-        print 'Serial baud rate: {}'.format(self.serial_baud_rate)
+        print ' Serial baud rate: {}'.format(self.serial_baud_rate)
 
+    def print_check_motor_commands(self):
+        print ' Check motor commands: {}'.format(self.check_motor_commands)
     # endregion
 
     # endregion
@@ -89,15 +97,18 @@ class MotorController:
         return valid
 
     def run_motor_command(self, cmd):
-        # if self.check_motor_command(cmd):
-        print colored(' Sending command...', 'yellow')
-        try:
-            self.serial.write(cmd + '\r')
-            print colored(' Command sent.', 'green')
-            return True
-        except:
-            print colored(' Command not sent.', 'red')
-            return False
+        valid = True
+        if self.check_motor_commands:
+            valid = self.check_motor_command(cmd)
+        if valid:
+            print colored(' Sending command...', 'yellow')
+            try:
+                self.serial.write(cmd + '\r')
+                print colored(' Command sent.', 'green')
+                return ' True;'
+            except:
+                print colored(' Command not sent.', 'red')
+                return ' False;'
 
     # endregion
 
@@ -151,7 +162,7 @@ class MotorController:
         elif cmd == 'q':
             exit(0)
         else:
-            self.run_motor_command(cmd)
+            print self.run_motor_command(cmd)
 
     def print_menu(self):
         if self.hide_menu: return

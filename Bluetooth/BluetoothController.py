@@ -1,13 +1,20 @@
 import os
 import threading
-import time
 import bluetooth
 from termcolor import colored
 import xml.etree.ElementTree as ET
 import Motors.MotorController
-import Sensors.CompassController
+
+try:
+    import Sensors.CompassController
+except:
+    None
 import Sensors.GPSController
-import Sensors.SonarController
+
+try:
+    import Sensors.SonarController
+except:
+    None
 
 
 class BluetoothController:
@@ -27,14 +34,26 @@ class BluetoothController:
     server_in_connection_timeout = 0
     server_out_connection_timeout = 0
     server_in_byte_size = 0
-    connected=False
+    connected = False
     # endregion
 
     # region Controller Variables
-    mc = Motors.MotorController
-    sc = Sensors.SonarController.SonarController
-    gc = Sensors.GPSController.GPSController
-    cc = Sensors.CompassController
+    try:
+        mc = Motors.MotorController
+    except:
+        None
+    try:
+        sc = Sensors.SonarController.SonarController
+    except:
+        None
+    try:
+        gc = Sensors.GPSController.GPSController
+    except:
+        None
+    try:
+        cc = Sensors.CompassController
+    except:
+        None
     # endregion
 
     # region ETC Variables
@@ -162,20 +181,23 @@ class BluetoothController:
         print 'Starting thread...'
         if not self.run_thread:
             self.start_server_thread()
-        self.connected=True
+        self.connected = True
 
     def send_data(self, data):
         try:
             self.client_sock_out.send(data)
         except:
-            print 'No outbound connection available.'
+            print ' No outbound connection available.'
 
     # endregion
 
     # region Thread Functions
     def start_server_thread(self):
-        self.run_thread = True
-        self.thread.start()
+        try:
+            self.thread.start()
+            self.run_thread = True
+        except:
+            None
 
     def server_thread_running(self):
         return threading.Thread.isAlive(self.thread)
@@ -205,11 +227,8 @@ class BluetoothController:
                     if data:
                         self.parse_terminal_command(data)
                 except:
-		    self.close_sockets()
+                    self.close_sockets()
                     print 'Disconnected, waiting for reconnection...'
-
-
-
 
     # endregion
 
@@ -222,7 +241,10 @@ class BluetoothController:
         self.thread = threading.Thread(target=self.run, args=())
 
     def load_settings(self):
-        tree = ET.parse('config.xml')
+        try:
+            tree = ET.parse('config.xml')
+        except:
+            return
         root = tree.getroot()
         device = root.find('bluetooth')
         for child in device.iter('terminal_commands'):
@@ -317,25 +339,23 @@ class BluetoothController:
                 print ' ', data
 
     def print_menu(self):
+        if self.hide_menu: return
+        bar = colored('|', 'magenta')
+
         print colored(' {:_^54}'.format(''), 'magenta')
-        print ' {:1}{:^61}{:1}'.format(colored('|', 'magenta'), colored('SERVER TERMINAL', 'white'),
-                                       colored('|', 'magenta'))
+        print ' {:1}{:^61}{:1}'.format(bar, colored('SERVER TERMINAL', 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('CONNECTION INFORMATION', 'white'),
-                                   colored('|', 'magenta'))
-        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('SERVER CONNECTED:', 'white'),
-                                        colored('CONNECTED', 'green') if self.is_connected() else colored(
-                                            'DISCONNECTED', 'red'), colored('|', 'magenta'))
-        print ' {} {} {:<31} {}'.format(colored('|', 'magenta'), colored('SERVER LISTENING:', 'white'),
-                                        colored('LISTENING',
-                                                'green') if self.server_thread_running() else colored(
-                                            'NOT LISTENING', 'red'), colored('|', 'magenta'))
+        print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
+        print ' {} {:68} {}'.format(colored('|', 'magenta'), colored(
+            'SERVER CONNECTED: {}'.format(colored('CONNECTED', 'green') if self.is_connected() else colored(
+                'DISCONNECTED', 'red')), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored(
+            'SERVER LISTENING: {}'.format(colored('LISTENING', 'green') if self.server_thread_running() else colored(
+                'NOT LISTENING', 'red')), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
-                                   colored('|', 'magenta'))
+        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:
-            print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(cmd[0], 'white'), cmd[1],
-                                                  colored('|', 'magenta'))
+            print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(cmd[0], 'white'), cmd[1], bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
@@ -347,3 +367,8 @@ class BluetoothController:
         self.return_to_main_menu = False
         return
 
+
+if __name__ == "__main__":
+    bc = BluetoothController(Motors.MotorController.MotorController(), Sensors.SonarController.SonarController(),
+                             Sensors.GPSController.GPSController(), Sensors.CompassController.CompassController())
+    bc.terminal()
