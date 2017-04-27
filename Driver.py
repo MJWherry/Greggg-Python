@@ -94,15 +94,9 @@ class Driver:
             'MOTOR CONTROLLER: {}'.format(colored('CONNECTED', 'green') if self.mc.is_connected else colored(
                 'DISCONNECTED', 'red')), 'white'), bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:68} {}'.format(bar, colored(
-            'SONAR THREAD: {}'.format(colored('RUNNING', 'green') if self.sc.sonar_thread_running() else colored(
-                'NOT RUNNING', 'red')), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored(
-            'GPS THREAD: {}'.format(colored('RUNNING', 'green') if self.gc.gps_thread_running() else colored(
-                'NOT RUNNING', 'red')), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored(
-            'COMPASS THREAD: {}'.format(colored('RUNNING', 'green') if self.cc.compass_thread_running() else colored(
-                'NOT RUNNING', 'red')), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('SONAR THREAD: {}'.format(self.sc.thread_status), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('GPS THREAD: {}'.format(self.gc.thread_status), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('COMPASS THREAD: {}'.format(self.cc.thread_status), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {:^59} {}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for command in self.valid_terminal_commands:
@@ -118,6 +112,7 @@ class Driver:
         prefix = cmd.split()[0]
         suffix = cmd[3:]
 
+        # NEED TO FIX FOR OTHER PREFIXES
         # Accept/forward commands based on controller prefix
         if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
             self.mc.parse_terminal_command(suffix)
