@@ -1,10 +1,14 @@
 import os
+import time
+import sys
 from termcolor import colored
 import xml.etree.ElementTree as ET
 from Bluetooth import BluetoothController
 from Motors import MotorController
 from Sensors import SonarController, GPSController, CompassController
+import logging
 
+logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
 
 class Driver:
     # region VARIABLES
@@ -33,29 +37,44 @@ class Driver:
         self.load_settings()
 
         # Setup objects
+        logging.info('(DRIVER) Creating controllers.')
         self.mc = MotorController.MotorController()
         self.sc = SonarController.SonarController()
         self.gc = GPSController.GPSController()
         self.cc = CompassController.CompassController()
-
         self.bc = BluetoothController.BluetoothController(self.mc, self.sc, self.gc, self.cc)
 
         # Start the appropriate threads automatically
+        logging.info('(DRIVER) Starting threads.')
+        time.sleep(1)
         self.sc.start_sonar_thread()
+
+        time.sleep(1)
         self.gc.start_gps_thread()
+
+        time.sleep(1)
         self.cc.start_compass_thread()
+
+        time.sleep(1)
         self.bc.start_server_thread()
 
+        print ' Finished, starting up in 3 seconds.'
+        time.sleep(3)
+        logging.info('(DRIVER) Starting up.')
+
     def load_settings(self):
+        logging.info('(DRIVER) Loading settings.')
         try:
-            tree = ET.parse('config.xml')
+            tree = ET.parse('/home/pi/Desktop/greggg-python/config.xml')
         except:
+            logging.error('(DRIVER) Couldn\'t open config file.')
             return
         root = tree.getroot()
         device = root.find('driver')
         for child in device.iter('terminal_commands'):
             for command in child.iter('command'):
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
+        logging.info('(DRIVER) Settings loaded.')
 
     def print_menu(self):
         if self.hide_menu: return
@@ -97,9 +116,9 @@ class Driver:
 
     def parse_terminal_command(self, cmd):
         prefix = cmd.split()[0]
-        suffix = cmd.replace(prefix, '').rstrip()
-        suffix = suffix[1:]
+        suffix = cmd[3:]
 
+        # Accept/forward commands based on controller prefix
         if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
             self.mc.parse_terminal_command(suffix)
         elif prefix == 'sc' or prefix == 'sonarcontroller' or prefix == 'sonar_controller':
@@ -111,25 +130,27 @@ class Driver:
         elif prefix == 'bc' or prefix == 'bluetoothcontroller' or prefix == 'bluetooth_controller':
             self.bc.parse_terminal_command(suffix)
 
+        # Switch to different controller terminals
         elif cmd == 'mct':
-            self.mc.terminal(), self.parse_terminal_command('c')
+            self.mc.terminal(), self.parse_terminal_command('c'), sys.stdout.write("\x1b]2;Driver Terminal\x07")
         elif cmd == 'sct':
-            self.sc.terminal(), self.parse_terminal_command('c')
+            self.sc.terminal(), self.parse_terminal_command('c'), sys.stdout.write("\x1b]2;Driver Terminal\x07")
         elif cmd == 'gct':
-            self.gc.terminal(), self.parse_terminal_command('c')
+            self.gc.terminal(), self.parse_terminal_command('c'), sys.stdout.write("\x1b]2;Driver Terminal\x07")
         elif cmd == 'cct':
-            self.cc.terminal(), self.parse_terminal_command('c')
+            self.cc.terminal(), self.parse_terminal_command('c'), sys.stdout.write("\x1b]2;Driver Terminal\x07")
         elif cmd == 'bct':
-            self.bc.terminal(), self.parse_terminal_command('c')
+            self.bc.terminal(), self.parse_terminal_command('c'), sys.stdout.write("\x1b]2;Driver Terminal\x07")
 
+        # Basic commands
+        elif cmd == 'c':
+            os.system(self.clear), self.print_menu()
         elif cmd == 'h':
             if self.hide_menu:
                 self.hide_menu = False
             else:
                 self.hide_menu = True
             self.parse_terminal_command('c')
-        elif cmd == 'c':
-            os.system(self.clear), self.print_menu()
         elif cmd == 'q':
             self.cc.stop_compass_thread()
             self.gc.stop_gps_thread()
@@ -138,21 +159,12 @@ class Driver:
             os.system(self.clear)
             exit(0)
 
-        elif cmd == '8':
-            self.sc.stop_sonar_thread()
-        elif cmd == '9':
-            if self.bc.is_connected():
-                data = raw_input(' Enter data to send: ')
-                self.bc.send_data(data)
-            else:
-                print ' Bluetooth server is not connected.'
-
     def terminal(self):
+        sys.stdout.write("\x1b]2;Driver Terminal\x07")
         self.print_menu()
         while True:
             cmd = raw_input(colored(' Enter an option: ', 'cyan'))
             self.parse_terminal_command(cmd)
-
 
 if __name__ == "__main__":
     d = Driver()

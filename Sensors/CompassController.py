@@ -1,7 +1,3 @@
-try:
-    import hmc5883l
-except:
-    None
 import logging
 import os
 import sys
@@ -9,6 +5,15 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 from termcolor import colored
+
+logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
+
+try:
+    import hmc5883l
+
+    logging.info('(COMPASS) Imported hmc5883l.')
+except:
+    logging.error('(COMPASS) Couldn\'t import hmc5883l.')
 
 
 class CompassController:
@@ -22,8 +27,9 @@ class CompassController:
     # region Compass settings
     try:
         compass = hmc5883l
+        logging.info('(COMPASS) Compass set to hmc5883l instance.')
     except:
-        None
+        logging.error('(COMPASS) Couldn\'t set compass to hmc5883l instance.')
     gauss = 0
     declination_degrees = -9
     declination_minutes = 23
@@ -37,106 +43,12 @@ class CompassController:
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
-    run_thread = False
 
-    # endregion
-
-    # endregion
-
-    # region Accessors/Mutators/Printers
-
-    # region Mutators
-    def set_gauss(self, gauss):
-        self.gauss = gauss
-
-    def set_declination_degrees(self,degrees):
-        self.declination_degrees = degrees
-        self.declination = (self.declination_degrees, self.declination_minutes)
-
-    def set_declination_minutes(self,minutes):
-        self.declination_minutes = minutes
-        self.declination=(self.declination_degrees, self.declination_minutes)
-
-    def set_update_time_interval(self, seconds):
-        self.update_time_interval = seconds
-
-    def set_i2c_port(self, port):
-        self.i2c_port = port
-
-    def set_i2c_bus_address(self, bus_address):
-        self.i2c_bus_address = bus_address
-
-    # endregion
-
-    # region Accessors
-    def get_gauss(self):
-        return self.gauss
-
-    def get_declination(self):
-        return (self.declination_degrees,self.declination_minutes)
-
-    def get_declination_degrees(self):
-        return self.declination_degrees
-
-    def get_declination_minutes(self):
-        return self.declination_minutes
-
-    def get_update_time_interval(self):
-        return self.update_time_interval
-
-    def get_i2c_port(self):
-        return self.i2c_port
-
-    def get_i2c_bus_address(self):
-        return self.i2c_bus_address
-
-    def get_x_axis(self):
-        return self.compass.axes()[0]
-
-    def get_y_axis(self):
-        return self.compass.axes()[1]
-
-    def get_z_axis(self):
-        return self.compass.axes()[2]
-
-    def get_heading(self):
-        return self.compass.degrees(self.compass.heading())
-
-    # endregion
-
-    # region Printers
-    def print_gauss(self):
-        print 'Gauss: {}'.format(self.gauss)
-
-    def print_declination(self):
-        print 'Declination: {}'.format(self.get_declination())
-
-    def print_declination_degrees(self):
-        print 'Declination degrees: {}'.format(self.declination_degrees)
-
-    def print_declination_minutes(self):
-        print 'Declination minutes: {}'.format(self.declination_minutes)
-
-    def print_update_time_interval(self):
-        print 'Update time interval: {}'.format(self.update_time_interval)
-
-    def print_i2c_port(self):
-        print 'I2C port: {}'.format(self.i2c_port)
-
-    def print_i2c_bus_address(self):
-        print 'I2C bus address: {}'.format(self.i2c_bus_address)
-
-    def print_x_axes(self):
-        print 'X-Axis: {}'.format(self.compass.axes()[0])
-
-    def print_y_axes(self):
-        print 'Y-Axes: {}'.format(self.compass.axes()[1])
-
-    def print_z_axes(self):
-        print 'Z-Axes: {}'.format(self.compass.axes()[2])
-
-    def print_heading(self):
-        print 'Heading: {}'.format(self.compass.degrees(self.compass.heading()))
+    thread_status = 'NONE'
+    thread_started = False
+    thread_running = False
+    thread_sleeping = False
+    thread_ended = False
 
     # endregion
 
@@ -148,43 +60,85 @@ class CompassController:
 
     # region Thread Functions
     def start_compass_thread(self):
-        try:
+        if not self.thread_started:
             self.thread.start()
-            self.run_thread = True
-        except:
-            None
+            self.thread_started = True
+            self.thread_running = True
+            self.thread_ended = False
+            self.thread_sleeping = False
+            self.thread_status = colored('RUNNING', 'green')
+        elif self.thread_ended:
+            print ' Thread already ran. Try restarting thread.'
+        elif self.thread_sleeping:
+            print ' Thread is sleeping. Cannot start thread.'
+        elif self.thread_running and self.thread_running:
+            print ' Thread is currently running. Cannot start'
+        else:
+            print ' Error, unknown case.'
 
-    def compass_thread_running(self):
-        if self.thread is None: return False
-        return threading.Thread.isAlive(self.thread)
+    def sleep_compass_thread(self):
+        if not self.thread_ended and self.thread_running and self.thread_started:
+            self.thread_sleeping = True
+            self.thread_running = False
+            self.thread_status = colored('SLEEPING', 'orange')
+        elif self.thread_ended:
+            print ' Thread already ran. Cannot sleep.'
+        elif not self.thread_started or not self.thread_running:
+            print ' Thread has not started yet or is not running.'
+
+    def wake_compass_thread(self):
+        if self.thread_sleeping:
+            self.thread_sleeping = False
+            self.thread_running = True
+            self.thread_status = colored('RUNNING', 'green')
+        elif self.thread_ended:
+            print ' Cannot wake a thread that\'s ended.'
+        elif self.thread_running:
+            print ' Threads already running not sleeping. '
 
     def stop_compass_thread(self):
-        self.run_thread = False
-        # Test implementation
+        self.thread_running = False
+        self.thread_sleeping = False
+        self.thread_ended = True
+        self.thread_started = True
+        self.thread_status = colored('NOT RUNNING', 'red')
 
     def restart_compass_thread(self):
         None
         # Implement
 
+    def get_compass_thread_status(self):
+        return self.thread_status
+
     def run(self):
-        while self.run_thread:
-            self.current_heading = str(self.compass.degrees(self.compass.heading()))
-            time.sleep(self.update_time_interval)
+        print ' Starting compass thread...'
+        logging.info('(COMPASS) Thread started.')
+        while self.thread_running:
+            if self.thread_sleeping:
+                while self.thread_sleeping:
+                    time.sleep(1)
+            else:
+                self.current_heading = str(self.compass.degrees(self.compass.heading()))
+                time.sleep(self.update_time_interval)
 
     # endregion
 
     def __init__(self):
         self.load_settings()
         try:
-            self.compass = hmc5883l.hmc5883l(gauss=self.gauss, declination=(self.declination_degrees, self.declination_minutes))
+            self.compass = hmc5883l.hmc5883l(gauss=self.gauss,
+                                             declination=(self.declination_degrees,self.declination_minutes))
+            logging.info('(COMPASS) Compass object created.')
         except:
-            None
+            logging.error('(COMPASS) Couldn\'t create compass object.')
         self.thread = threading.Thread(target=self.run, args=())
 
     def load_settings(self):
+        logging.info('(COMPASS) Loading settings.')
         try:
-            tree = ET.parse('config.xml')
+            tree = ET.parse('/home/pi/Desktop/greggg-python/config.xml')
         except:
+            logging.warning('(COMPASS) Couldn\'t load config file.')
             return
         root = tree.getroot()
         device = root.find('compass')
@@ -192,28 +146,28 @@ class CompassController:
             for command in child.iter('command'):
                 self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
         for child in device.iter('setting'):
-            if child.attrib['name'] == 'i2c_port': self.i2c_port = int(child.attrib['value'])
-            elif child.attrib['name'] == 'i2c_bus_address': self.i2c_bus_address = str(child.attrib['value'])
-            elif child.attrib['name'] == 'declination_minutes': self.declination_minutes = int(child.attrib['value'])
-            elif child.attrib['name'] == 'declination_degrees': self.declination_degrees = int(child.attrib['value'])
-            elif child.attrib['name'] == 'gauss': self.gauss = float(child.attrib['value'])
-            elif child.attrib['name'] == 'update_time_interval': self.update_time_interval = float(child.attrib['value'])
+            if child.attrib['name'] == 'i2c_port':
+                self.i2c_port = int(child.attrib['value'])
+            elif child.attrib['name'] == 'i2c_bus_address':
+                self.i2c_bus_address = str(child.attrib['value'])
+            elif child.attrib['name'] == 'declination_minutes':
+                self.declination_minutes = int(child.attrib['value'])
+            elif child.attrib['name'] == 'declination_degrees':
+                self.declination_degrees = int(child.attrib['value'])
+            elif child.attrib['name'] == 'gauss':
+                self.gauss = float(child.attrib['value'])
+            elif child.attrib['name'] == 'update_time_interval':
+                self.update_time_interval = float(child.attrib['value'])
+        logging.info('(COMPASS) Settings loaded.')
 
     def save_settings(self):
         None
 
-    def print_settings(self):
-        print 'COMPASS CONTROLLER SETTINGS'
-        self.print_i2c_bus_address()
-        self.print_i2c_port()
-        self.print_gauss()
-        self.print_declination()
-        self.print_update_time_interval()
-
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
         type = cmd.split()[0]
-        parameters = cmd.replace(type,'').split()
+        parameters = cmd.replace(type, '').split()
+        split = cmd.split()
 
         if cmd == 'c':
             os.system(self.clear)
@@ -228,16 +182,30 @@ class CompassController:
             self.return_to_main_menu = True
         elif cmd == 'q':
             exit(0)
+        elif type == 'thread':
+            if split[1] == 'start':
+                self.start_compass_thread()
+                self.parse_terminal_command('c')
+            elif split[1] == 'stop':
+                self.stop_compass_thread()
+                self.parse_terminal_command('c')
         elif type == 'get' or type == 'print':
             data = ' '
             for cmd in parameters:
-                if cmd == 'heading': data += str(self.get_heading()) + ','
-                elif cmd == 'declination_degrees': data += str(self.declination_degrees) + ','
-                elif cmd == 'declination_minutes': data += str(self.declination_minutes) + ','
-                elif cmd == 'declination': data += str(self.get_declination()) + ','
-                elif cmd == 'update_time_interval' or cmd == 'interval': data += str(self.update_time_interval) + ','
-                elif cmd == 'i2c_bus_address' or cmd == 'i2c_addr': data += str(format(self.i2c_bus_address,'#04x')) + ','
-                elif cmd == 'i2c_bus_port' or cmd == 'i2c_port': data += str(self.i2c_port) + ','
+                if cmd == 'heading':
+                    data += '{},'.format(self.compass.degrees(self.compass.heading()))
+                elif cmd == 'declination_degrees':
+                    data += '{},'.format(self.declination_degrees)
+                elif cmd == 'declination_minutes':
+                    data += '{},'.format(self.declination_minutes)
+                elif cmd == 'declination':
+                    data += '({}, {}),'.format(self.declination_degrees,self.declination_minutes)
+                elif cmd == 'update_time_interval' or cmd == 'interval':
+                    data += '{},'.format(self.update_time_interval)
+                elif cmd == 'i2c_bus_address' or cmd == 'i2c_addr':
+                    data += '{},'.format('{}'.format(self.i2c_bus_address, '#04x'))
+                elif cmd == 'i2c_bus_port' or cmd == 'i2c_port':
+                    data += '{},'.format(self.i2c_port)
             data = data[:-1] + ';'
             if type == 'get':
                 return data
@@ -253,12 +221,16 @@ class CompassController:
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('STATUS: {}'.format('is connected? implement'), 'white'), bar)
-        print ' {} {:33} {:34} {}'.format(bar, colored('I2C PORT: {}'.format(self.i2c_port),'white'), colored('I2C ADDRESS: {}'.format(self.i2c_bus_address),'white'),bar)
-        print ' {} {:33} {:34} {}'.format(bar, colored('DECLINATION MINUTES: {}'.format(self.declination_minutes), 'white'),
-                                          colored('DECLINATION DEGREES: {}'.format(self.declination_degrees), 'white'), bar)
+        print ' {} {:33} {:34} {}'.format(bar, colored('I2C PORT: {}'.format(self.i2c_port), 'white'),
+                                          colored('I2C ADDRESS: {}'.format(self.i2c_bus_address), 'white'), bar)
+        print ' {} {:33} {:34} {}'.format(bar,
+                                          colored('DECLINATION MINUTES: {}'.format(self.declination_minutes), 'white'),
+                                          colored('DECLINATION DEGREES: {}'.format(self.declination_degrees), 'white'),
+                                          bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {:68} {}'.format(bar, colored('THREAD: {}'.format(
-            colored('RUNNING', 'green') if self.compass_thread_running() else colored('NOT RUNNING', 'red')), 'white'), bar)
+            colored('RUNNING', 'green') if self.compass_thread_running() else colored('NOT RUNNING', 'red')), 'white'),
+                                    bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:
@@ -267,12 +239,13 @@ class CompassController:
 
     def terminal(self):
         os.system(self.clear)
-        # sys.stdout.write("\x1b]2;Compass Controller Terminal\x07")
+        sys.stdout.write("\x1b]2;Compass Controller Terminal\x07")
         self.print_menu()
         while not self.return_to_main_menu:
             cmd = raw_input(colored(' Enter a command: ', 'cyan'))
             self.parse_terminal_command(cmd)
         self.return_to_main_menu = False
+
 
 if __name__ == "__main__":
     cc = CompassController()

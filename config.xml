@@ -4,10 +4,10 @@
         <settings>
             <setting name="i2c_port" value="1"/>
             <setting name="i2c_bus_address" value="0x1E"/>
-            <setting name="declination_minutes" value="-9"/>
-            <setting name="declination_degrees" value="23"/>
+            <setting name="declination_degrees" value="-9"/>
+            <setting name="declination_minutes" value="23"/>
             <setting name="gauss" value="1.3"/>
-            <setting name="update_time_interval" value="1"/>
+            <setting name="update_time_interval" value="0.2"/>
         </settings>
         <hardware_commands>
         </hardware_commands>
@@ -34,7 +34,6 @@
             <command name="GCT" description="Enter the gps control terminal."/>
             <command name="CCT" description="Enter the compass control terminal."/>
             <command name="BCT" description="Enter the bluetooth server control terminal."/>
-            <command name="CON" description="Start listening for a bluetooth connection." />
             <command name="H" description="Toggle visual of menu."/>
             <command name="C" description="Clear the screen."/>
             <command name="Q" description="Exit the terminal."/>
@@ -45,7 +44,6 @@
         <settings>
             <setting name="serial_port" value="/dev/ttyS0" />
             <setting name="serial_baud_rate" value="9600" />
-            <setting name="update_time_interval" value="0.5" />
         </settings>
         <hardware_commands>
         </hardware_commands>
@@ -119,13 +117,14 @@
     </sonar>
     <bluetooth>
         <settings>
-            <setting name="server_address" value="B8:27:EB:46:FB:77"/>
+	    <setting name="server_address" value="B8:27:EB:7C:BA:C3"/>
             <setting name="server_in_byte_size" value="1024"/>
             <setting name="server_out_port" value="1"/>
             <setting name="server_in_port" value="2"/>
             <setting name="server_in_connection_timeout" value="30" />
             <setting name="server_out_connection_timeout" value="30" />
             <setting name="server_backlog" value="1"/>
+            <setting name="reconnect_limit" value="10" />
         </settings>
         <hardware_commands>
         </hardware_commands>

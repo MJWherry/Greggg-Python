@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import xml.etree.ElementTree as ET
 import serial
 from termcolor import colored
@@ -26,48 +27,10 @@ class MotorController:
 
     # endregion
 
-    # region Accessors/Mutators/Printers
-
-    # region Accessors
-    def get_serial_port(self):
-        return self.serial_port
-
-    def get_serial_baud_rate(self):
-        return self.serial_baud_rate
-
-    def get_is_checking_motor_commands(self):
-        return self.check_motor_commands
-    # endregion
-
-    # region Mutators
-    def set_serial_port(self, port):
-        self.serial_port = port
-
-    def set_serial_baud_rate(self, baud_rate):
-        self.serial_baud_rate = baud_rate
-
-    def set_check_motor_commands(self, check):
-        self.check_motor_commands = check
-
-    # endregion
-
-    # region Printers
-    def print_serial_port(self):
-        print ' Serial port: {}'.format(self.serial_port)
-
-    def print_serial_baud_rate(self):
-        print ' Serial baud rate: {}'.format(self.serial_baud_rate)
-
-    def print_check_motor_commands(self):
-        print ' Check motor commands: {}'.format(self.check_motor_commands)
-    # endregion
-
-    # endregion
-
     # region Motor functions
     def is_connected(self):
         if self.serial is None: return False
-        return self.serial.is_open
+        return True
 
     def connect(self):
         try:
@@ -90,25 +53,23 @@ class MotorController:
                     param_number = 0
                     for parameter_range in command[2]:
                         return True
-                        param_number += 1
-                        return True
                 else:
                     return False
         return valid
 
     def run_motor_command(self, cmd):
-        valid = True
-        if self.check_motor_commands:
-            valid = self.check_motor_command(cmd)
-        if valid:
-            print colored(' Sending command...', 'yellow')
-            try:
-                self.serial.write(cmd + '\r')
-                print colored(' Command sent.', 'green')
-                return ' True;'
-            except:
-                print colored(' Command not sent.', 'red')
-                return ' False;'
+        #valid = True
+        #if self.check_motor_commands:
+        #    valid = self.check_motor_command(cmd)
+        #if valid:
+        print colored(' Sending command...', 'yellow')
+        try:
+            self.serial.write(cmd + '\r')
+            print colored(' Command sent.', 'green')
+            return ' True;'
+        except:
+            print colored(' Command not sent.', 'red')
+            return ' False;'
 
     # endregion
 
@@ -118,7 +79,7 @@ class MotorController:
 
     def load_settings(self):
         try:
-            tree = ET.parse('config.xml')
+            tree = ET.parse('/home/pi/Desktop/greggg-python/config.xml')
         except:
             return
         root = tree.getroot()
@@ -140,11 +101,6 @@ class MotorController:
 
     def save_settings(self):
         None
-
-    def print_settings(self):
-        print 'MOTOR CONTROLLER SETTINGS'
-        self.print_serial_port()
-        self.print_serial_baud_rate()
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
@@ -173,20 +129,22 @@ class MotorController:
         print ' {}{:^61}{}'.format(bar, colored('MOTOR CONTROLLER TERMINAL', 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored('STATUS: {}'.format(colored('CONNECTED', 'green') if self.is_connected() else colored('DISCONNECTED','red')), 'white'),bar)
-        print ' {} {:59} {}'.format(bar, colored('PORT: {}'.format(self.serial_port[:41])+'...','white'), bar)
-        print ' {} {:59} {}'.format(bar, colored('BAUD RATE: {}'.format(self.serial_baud_rate),'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('STATUS: {}'.format(
+            colored('CONNECTED', 'green') if self.is_connected() else colored('DISCONNECTED', 'red')), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('PORT: {}'.format(self.serial_port[:41]) + '...', 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('BAUD RATE: {}'.format(self.serial_baud_rate), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for command in self.valid_terminal_commands:
             if len(command[0]) is 1:
-                print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(command[0], 'white'), command[1],bar)
+                print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(command[0], 'white'), command[1], bar)
             else:
                 print ' {} \'{:^3}\' {:44} {}'.format(bar, colored(command[0], 'white'), command[1], bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
         os.system(self.clear)
+        sys.stdout.write("\x1b]2;Motor Control Terminal\x07")
         self.print_menu()
         while not self.return_to_main_menu:
             cmd = raw_input(colored(' Enter a command: ', 'cyan'))
