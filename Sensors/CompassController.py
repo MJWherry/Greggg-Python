@@ -44,7 +44,7 @@ class CompassController:
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
 
-    thread_status = 'NONE'
+    thread_status = colored('NOT STARTED', 'red')
     thread_started = False
     thread_running = False
     thread_sleeping = False
@@ -80,7 +80,7 @@ class CompassController:
         if not self.thread_ended and self.thread_running and self.thread_started:
             self.thread_sleeping = True
             self.thread_running = False
-            self.thread_status = colored('SLEEPING', 'orange')
+            self.thread_status = colored('SLEEPING', 'yellow')
         elif self.thread_ended:
             print ' Thread already ran. Cannot sleep.'
         elif not self.thread_started or not self.thread_running:
@@ -97,11 +97,14 @@ class CompassController:
             print ' Threads already running not sleeping. '
 
     def stop_compass_thread(self):
-        self.thread_running = False
-        self.thread_sleeping = False
-        self.thread_ended = True
-        self.thread_started = True
-        self.thread_status = colored('NOT RUNNING', 'red')
+        if not self.thread_started:
+            print ' Thread hasn\'t started yet.'
+        else:
+            self.thread_running = False
+            self.thread_sleeping = False
+            self.thread_ended = True
+            self.thread_started = True
+            self.thread_status = colored('ENDED', 'red')
 
     def restart_compass_thread(self):
         None
@@ -189,6 +192,12 @@ class CompassController:
             elif split[1] == 'stop':
                 self.stop_compass_thread()
                 self.parse_terminal_command('c')
+            elif split[1] == 'sleep':
+                self.sleep_compass_thread()
+                self.parse_terminal_command('c')
+            elif split[1] == 'wake':
+                self.wake_compass_thread()
+                self.parse_terminal_command('c')
         elif type == 'get' or type == 'print':
             data = ' '
             for cmd in parameters:
@@ -228,9 +237,7 @@ class CompassController:
                                           colored('DECLINATION DEGREES: {}'.format(self.declination_degrees), 'white'),
                                           bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:68} {}'.format(bar, colored('THREAD: {}'.format(
-            colored('RUNNING', 'green') if self.compass_thread_running() else colored('NOT RUNNING', 'red')), 'white'),
-                                    bar)
+        print ' {} {:68} {}'.format(bar, colored('THREAD: {}'.format(self.thread_status), 'white'),bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:

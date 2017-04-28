@@ -41,7 +41,7 @@ class GPSController:
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
 
-    thread_status = 'NONE'
+    thread_status = colored('NOT STARTED', 'red')
     thread_started = False
     thread_running = False
     thread_sleeping = False
@@ -89,7 +89,7 @@ class GPSController:
 
     # region Thread Functions
 
-    def start_compass_thread(self):
+    def start_gps_thread(self):
         if not self.thread_started:
             self.thread.start()
             self.thread_started = True
@@ -106,34 +106,39 @@ class GPSController:
         else:
             print ' Error, unknown case.'
 
-    def sleep_compass_thread(self):
+    def sleep_gps_thread(self):
         if not self.thread_ended and self.thread_running and self.thread_started:
             self.thread_sleeping = True
             self.thread_running = False
-            self.thread_status = colored('SLEEPING', 'orange')
+            self.thread_status = colored('SLEEPING', 'yellow')
         elif self.thread_ended:
             print ' Thread already ran. Cannot sleep.'
         elif not self.thread_started or not self.thread_running:
             print ' Thread has not started yet or is not running.'
 
-    def wake_compass_thread(self):
+    def wake_gps_thread(self):
         if self.thread_sleeping:
             self.thread_sleeping = False
             self.thread_running = True
             self.thread_status = colored('RUNNING', 'green')
+        elif not self.thread_started:
+            print ' Thread hasn\'t started yet. '
         elif self.thread_ended:
             print ' Cannot wake a thread that\'s ended.'
         elif self.thread_running:
             print ' Threads already running not sleeping. '
 
-    def stop_compass_thread(self):
-        self.thread_running = False
-        self.thread_sleeping = False
-        self.thread_ended = True
-        self.thread_started = True
-        self.thread_status = colored('NOT RUNNING', 'red')
+    def stop_gps_thread(self):
+        if not self.thread_started:
+            print ' Thread hasn\'t started yet.'
+        else:
+            self.thread_running = False
+            self.thread_sleeping = False
+            self.thread_ended = True
+            self.thread_started = True
+            self.thread_status = colored('ENDED', 'red')
 
-    def restart_sonar_thread(self):
+    def restart_gps_thread(self):
         None
         # Implement
 
@@ -204,6 +209,12 @@ class GPSController:
             if split[1] == 'start':
                 self.start_gps_thread()
                 self.parse_terminal_command('c')
+            elif split[1] == 'sleep':
+                self.sleep_gps_thread()
+                self.parse_terminal_command('c')
+            elif split[1] == 'wake':
+                self.wake_gps_thread()
+                self.parse_terminal_command('c')
             elif split[1] == 'stop':
                 self.stop_gps_thread()
                 self.parse_terminal_command('c')
@@ -250,9 +261,7 @@ class GPSController:
         print ' {} {:59} {}'.format(bar, colored('PORT: {}'.format(self.serial_port), 'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('BAUD RATE: {}'.format(self.serial_baud_rate), 'white'), bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:68} {}'.format(bar,
-                                    colored('THREAD: {}'.format(colored('RUNNING', 'green') if self.gps_thread_running()
-                                                                else colored('NOT RUNNING', 'red')), 'white'), bar)
+        print ' {} {:68} {}'.format(bar,colored('THREAD: {}'.format(self.thread_status), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
         for cmd in self.valid_terminal_commands:
