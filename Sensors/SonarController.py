@@ -1,26 +1,19 @@
 import logging
 import os
-import threading
-import time
 import sys
-import xml.etree.ElementTree as ET
+import time
+import RPi.GPIO as GPIO
+from Skeletons import SettingsManager
 from termcolor import colored
+from Skeletons import SleepableThread
 
-try:
-    logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
-except:
-    logging.basicConfig(filename='run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
-
-try:
-    import RPi.GPIO as GPIO
-
-    logging.info('(SONAR) RPi.GPIO imported.')
-except:
-    logging.error('(SONAR) Couldn\'t import RPi.GPIO.')
+logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
 
 
-class SonarController:
+class SonarController(SleepableThread.SleepableThread):
     # region Variables
+
+    SC = SettingsManager.SettingsManager()
 
     # region GPIO Pin Numbers
     front_left_sonar_pin = 37
@@ -39,17 +32,13 @@ class SonarController:
     # endregion
 
     # region ETC Variables
-    thread = None
     valid_terminal_commands = []
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
+    # endregion
 
-    thread_status = colored('NOT STARTED', 'red')
-    thread_started = False
-    thread_running = False
-    thread_sleeping = False
-    thread_ended = False
+    # region Thread Variables
 
     # endregion
 
@@ -102,65 +91,10 @@ class SonarController:
     # endregion
 
     # region Thread Functions
-    def start_sonar_thread(self):
-        if not self.thread_started:
-            self.thread.start()
-            self.thread_started = True
-            self.thread_running = True
-            self.thread_ended = False
-            self.thread_sleeping = False
-            self.thread_status = colored('RUNNING', 'green')
-        elif self.thread_ended:
-            print ' Thread already ran. Try restarting thread.'
-        elif self.thread_sleeping:
-            print ' Thread is sleeping. Cannot start thread.'
-        elif self.thread_running and self.thread_running:
-            print ' Thread is currently running. Cannot start'
-        else:
-            print ' Error, unknown case.'
-
-    def sleep_sonar_thread(self):
-        if not self.thread_ended and self.thread_running and self.thread_started:
-            self.thread_sleeping = True
-            self.thread_running = False
-            self.thread_status = colored('SLEEPING', 'yellow')
-        elif self.thread_sleeping:
-            print ' Thread already sleeping.'
-        elif self.thread_ended:
-            print ' Thread already ran. Cannot sleep.'
-        elif not self.thread_started or not self.thread_running:
-            print ' Thread has not started yet or is not running.'
-
-    def wake_sonar_thread(self):
-        if self.thread_sleeping:
-            self.thread_sleeping = False
-            self.thread_running = True
-            self.thread_status = colored('RUNNING', 'green')
-        elif self.thread_ended:
-            print ' Cannot wake a thread that\'s ended.'
-        elif self.thread_running:
-            print ' Threads already running not sleeping. '
-
-    def stop_sonar_thread(self):
-        if not self.thread_started:
-            print ' Thread hasn\'t started yet.'
-        else:
-            self.thread_running = False
-            self.thread_sleeping = False
-            self.thread_ended = True
-            self.thread_started = True
-            self.thread_status = colored('ENDED', 'red')
-
-    def restart_sonar_thread(self):
-        None
-        # Implement
-
     def run(self):
-        print ' Starting sonar thread...'
-        logging.info('(SONAR) Thread started.')
-        while self.thread_running:
-            if self.thread_sleeping:
-                while self.thread_sleeping:
+        while self.thread_state != 4:
+            if self.thread_state == 3:
+                while self.thread_state == 3:
                     time.sleep(1)
             else:
                 time.sleep(float(self.update_time_interval))
@@ -169,53 +103,19 @@ class SonarController:
     # endregion
 
     def __init__(self):
-        self.load_settings()
-        self.thread = threading.Thread(target=self.run, args=())
+        self.SC.load_settings('sonar')
+        self.update_time_interval = float(self.SC.get_setting_value('update_time_interval'))
+        self.front_left_sonar_pin = int(self.SC.get_setting_value('front_left_sonar_pin'))
+        self.front_middle_sonar_pin = int(self.SC.get_setting_value('front_middle_sonar_pin'))
+        self.front_right_sonar_pin = int(self.SC.get_setting_value('front_right_sonar_pin'))
+        self.middle_back_sonar_pin = int(self.SC.get_setting_value('middle_back_sonar_pin'))
+        self.max_cpu_iterations = int(self.SC.get_setting_value('max_cpu_iterations'))
         try:
             GPIO.setmode(GPIO.BOARD)
             logging.info('(SONAR) Object created successfully.')
         except:
             logging.error('(SONAR) Couldn\'t set GPIO mode to GPIO.BOARD.')
-
-    def load_settings(self):
-        logging.info('(SONAR) Loading settings.')
-        try:
-            tree = ET.parse('/home/pi/Desktop/greggg-python/config.xml')
-        except:
-            logging.warn('(SONAR) Could\'t open the config file.')
-            return
-        root = tree.getroot()
-        device = root.find('sonar')
-        for child in device.iter('terminal_commands'):
-            for command in child.iter('command'):
-                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
-        for child in device.iter('setting'):
-            if child.attrib['name'] == 'update_time_interval':
-                self.update_time_interval = float(child.attrib['value'])
-            elif child.attrib['name'] == 'front_left_sonar_pin':
-                self.front_left_sonar_pin = int(child.attrib['value'])
-            elif child.attrib['name'] == 'front_middle_sonar_pin':
-                self.front_middle_sonar_pin = int(child.attrib['value'])
-            elif child.attrib['name'] == 'front_right_sonar_pin':
-                self.front_right_sonar_pin = int(child.attrib['value'])
-            elif child.attrib['name'] == 'middle_back_sonar_pin':
-                self.middle_back_sonar_pin = int(child.attrib['value'])
-            elif child.attrib['name'] == 'max_cpu_iterations':
-                self.max_cpu_iterations = int(child.attrib['value'])
-        logging.info('(SONAR) Settings loaded.')
-
-    def save_settings(self):
-        None
-
-    def get_settings(self):
-        data = 'SONAR_SETTINGS{' \
-               + 'UPDATE_TIME_INTERVAL(' + str(self.update_time_interval) + '),' \
-               + 'FRONT_LEFT_SONAR_PIN(' + str(self.front_left_sonar_pin) + '),' \
-               + 'FRONT_MIDDLE_SONAR_PIN(' + str(self.front_middle_sonar_pin) + '),' \
-               + 'FRONT_RIGHT_SONAR_PIN(' + str(self.front_left_sonar_pin) + '),' \
-               + 'MIDDLE_BACK_SONAR_PIN(' + str(self.middle_back_sonar_pin) + ')' \
-               + '}'
-        return data
+        super(SonarController, self).__init__()
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
@@ -235,20 +135,9 @@ class SonarController:
         elif cmd == 'q':
             exit(0)
         elif type == 'set':
-            None
+            pass
         elif type == 'thread':
-            if split[1] == 'start':
-                self.start_sonar_thread()
-                self.parse_terminal_command('c')
-            elif split[1] == 'sleep':
-                self.sleep_sonar_thread()
-                self.parse_terminal_command('c')
-            elif split[1] == 'wake':
-                self.wake_sonar_thread()
-                self.parse_terminal_command('c')
-            elif split[1]=='stop':
-                self.stop_sonar_thread()
-                self.parse_terminal_command('c')
+            self.parse_thread_command(cmd.split()[1])
         elif type == 'print' or split[0] == 'get':
             data = ' '
             for cmd in split:
@@ -263,7 +152,7 @@ class SonarController:
                 elif cmd == 'update_time_interval' or cmd == 'interval':
                     data += str(self.update_time_interval) + ','
                 elif cmd == 'settings':
-                    data += self.get_settings() + ','
+                    data += self.SC.get_settings_string() + ','
                 elif cmd == 'all':
                     data += str('{},{},{},{}'.format(self.front_middle_sonar_distance, self.front_left_sonar_distance,
                                                      self.middle_back_sonar_distance,
@@ -292,13 +181,10 @@ class SonarController:
                                           colored('MIDDLE BACK PIN: {}'.format(self.middle_back_sonar_pin), 'white'),
                                           bar)
         print colored(' {}{: ^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:68} {}'.format(bar, colored('THREAD: {}'.format(self.thread_status), 'white'), bar)
-        print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:^59} {}'.format(colored('|', 'magenta'), colored('TERMINAL COMMANDS', 'white'),
-                                     colored('|', 'magenta'))
-        for cmd in self.valid_terminal_commands:
-            print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(cmd[0], 'white'), cmd[1],
-                                                  colored('|', 'magenta'))
+        print ' {} {:68} {}'.format(bar, colored('THREAD: {}'.format(self.thread_status()), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('THREAD PROCESS ID: {}'.format(self.thread_pid), 'white'), bar)
+        print ' {} {:59} {}'.format(bar, colored('THREAD SPAWN COUNT: {}'.format(self.thread_spawn_count), 'white'),
+                                    bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):

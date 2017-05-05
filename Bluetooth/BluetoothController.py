@@ -1,42 +1,23 @@
+import logging
 import os
 import sys
-import threading
-import bluetooth
-from termcolor import colored
-import xml.etree.ElementTree as ET
-import logging
 import time
+import bluetooth
+from Skeletons import SettingsManager
+from Skeletons import SleepableThread
+from Motors import MotorController
+from Sensors import CompassController
+from Sensors import GPSController
+from Sensors import SonarController
+from termcolor import colored
 
 logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
 
-# region Imports
-try:
-    import Motors.MotorController
-    logging.info('(BLUETOOTH) Imported Motors.MotorController.')
-except:
-    logging.error('(BLUETOOTH) Couldn\'t import Motors.MotorController')
-try:
-    import Sensors.CompassController
-    logging.info('(BLUETOOTH) Imported Sensors.CompassController.')
-except:
-    logging.error('(BLUETOOTH) Couldn\'t import Sensors.CompassController')
-try:
-    import Sensors.GPSController
-    logging.info('(BLUETOOTH) Imported Sensors.GPSController.')
-except:
-    logging.error('(BLUETOOTH) Couldn\'t import Sensors.GPSController')
-try:
-    import Sensors.SonarController
-    logging.info('(BLUETOOTH) Imported Sensors.SonarController.')
-except:
-    logging.error('(BLUETOOTH) Couldn\'t import Sensors.SonarController')
 
-
-# endregion
-
-
-class BluetoothController:
+class BluetoothController(SleepableThread.SleepableThread):
     # region Variables
+
+    SM = SettingsManager.SettingsManager()
 
     # region Bluetooth Variables
     server_sock_in = None
@@ -62,36 +43,33 @@ class BluetoothController:
 
     # region Controller Variables
     try:
-        mc = Motors.MotorController
+        mc = MotorController
         logging.info('(BLUETOOTH) Set mc to MotorController instance.')
     except:
         logging.error('(BLUETOOTH) Couldn\'t set mc to MotorController instance.')
     try:
-        sc = Sensors.SonarController.SonarController
+        sc = SonarController.SonarController
         logging.info('(BLUETOOTH) Set sc to SonarController instance.')
     except:
         logging.error('(BLUETOOTH) Couldn\'t set sc to SonarController instance.')
     try:
-        gc = Sensors.GPSController.GPSController
+        gc = GPSController.GPSController
         logging.info('(BLUETOOTH) Set gc to GPSController instance.')
     except:
         logging.error('(BLUETOOTH) Couldn\'t set gc to GPSController instance.')
     try:
-        cc = Sensors.CompassController
+        cc = CompassController
         logging.info('(BLUETOOTH) Set cc to CompassController instance.')
     except:
         logging.error('(BLUETOOTH) Couldn\'t set cc to CompassController instance.')
     # endregion
 
     # region ETC Variables
-    thread = None
     valid_terminal_commands = []
     received_commands = []
     hide_menu = False
     return_to_main_menu = False
     clear = 'cls' if os.name == 'nt' else 'clear'
-    run_thread = False
-
     # endregion
 
     # endregion
@@ -207,8 +185,7 @@ class BluetoothController:
         self.bind_server_out_port()
         self.listen()
         self.accept_connections()
-        if not self.run_thread:
-            self.start_server_thread()
+        self.create_thread()
         self.connected = True
 
     def send_data(self, data):
@@ -221,87 +198,38 @@ class BluetoothController:
     # endregion
 
     # region Thread Functions
-    def start_server_thread(self):
-        # if self.sockets_created_and_bound():
-        try:
-            self.thread.start()
-            self.run_thread = True
-        except:
-            logging.error('(BLUETOOTH) Couldn\'t start thread.')
-            # else:
-            #    logging.error('(BLUETOOTH) Couldn\'t start thread; Couldn\'t verify the objects were created.')
-            #    print ' Could not start bluetooth thread.'
-
-    def server_thread_running(self):
-        return threading.Thread.isAlive(self.thread)
-
-    def stop_server_thread(self):
-        self.run_thread = False
-
-    def restart_server_thread(self):
-        None
-        # Implement
-
     def run(self):
-        print ' Starting bluetooth thread...'
-        logging.info('(BLUETOOTH) Thread started.')
-        while self.run_thread:
-            try:
-                self.setup()
-                self.parse_terminal_command('c')
-                while self.connected:
-                    try:
-                        data = self.client_sock_in.recv(self.server_in_byte_size)
-                        if data:
-                            self.parse_terminal_command(data)
-                    except:
-                        self.close_sockets()
-                        self.parse_terminal_command('c')
-            except:
-                print 'Could not setup(), waiting...'
-                time.sleep(10)
+        while self.thread_state != 4:
+            if self.thread_state == 3:
+                while self.thread_state == 3:
+                    time.sleep(1)
+            self.setup()
+            self.parse_terminal_command('c')
+            while self.connected:
+                try:
+                    data = self.client_sock_in.recv(self.server_in_byte_size)
+                    if data:
+                        self.parse_terminal_command(data)
+                except:
+                    self.close_sockets()
+                    self.parse_terminal_command('c')
 
     # endregion
 
     def __init__(self, motor, sonar, gps, compass):
-        self.load_settings()
+        self.SM.load_settings('bluetooth')
+        self.server_in_port = int(self.SM.get_setting_value('server_in_port'))
+        self.server_out_port = int(self.SM.get_setting_value('server_out_port'))
+        self.server_backlog = int(self.SM.get_setting_value('server_backlog'))
+        self.server_in_byte_size = int(self.SM.get_setting_value('server_in_byte_size'))
+        self.server_in_connection_timeout = float(self.SM.get_setting_value('server_in_connection_timeout'))
+        self.server_out_connection_timeout = float(self.SM.get_setting_value('server_out_connection_timeout'))
+        self.server_address = str(self.SM.get_setting_value('server_address'))
         self.mc = motor
         self.sc = sonar
         self.gc = gps
         self.cc = compass
-        self.thread = threading.Thread(target=self.run, args=())
-
-    def load_settings(self):
-        try:
-            tree = ET.parse('/home/pi/Desktop/greggg-python/config.xml')
-        except:
-            logging.error('(BLUETOOTH) Couldn\'t load settings..')
-            return
-        root = tree.getroot()
-        device = root.find('bluetooth')
-        for child in device.iter('terminal_commands'):
-            for command in child.iter('command'):
-                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
-        for child in device.iter('setting'):
-            if child.attrib['name'] == 'server_in_port':
-                self.server_in_port = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_backlog':
-                self.server_backlog = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_out_port':
-                self.server_out_port = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_in_connection_timeout':
-                self.server_in_connection_timeout = float(child.attrib['value'])
-            elif child.attrib['name'] == 'server_out_connection_timeout':
-                self.server_out_connection_timeout = float(child.attrib['value'])
-            elif child.attrib['name'] == 'server_in_byte_size':
-                self.server_in_byte_size = int(child.attrib['value'])
-            elif child.attrib['name'] == 'server_address':
-                self.server_address = str(child.attrib['value'])
-        logging.info('(BLUETOOTH) Settings loaded.')
-
-    def save_settings(self):
-        # Implement
-        None
+        super(BluetoothController, self).__init__()
 
     def parse_terminal_command(self, command):
         prefixes = ['mc', 'motorcontroller', 'motor_controller',
@@ -367,12 +295,7 @@ class BluetoothController:
             elif command == 'q':
                 exit(0)
             elif type == 'thread':
-                if split[1] == 'start':
-                    self.start_server_thread()
-                    self.parse_terminal_command('c')
-                elif split[1] == 'stop':
-                    self.stop_server_thread()
-                    self.parse_terminal_command('c')
+                self.parse_thread_command(split[1])
 
     def print_menu(self):
         if self.hide_menu: return
@@ -385,13 +308,7 @@ class BluetoothController:
         print ' {} {:68} {}'.format(colored('|', 'magenta'), colored(
             'SERVER CONNECTED: {}'.format(colored('CONNECTED', 'green') if self.is_connected() else colored(
                 'DISCONNECTED', 'red')), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored(
-            'SERVER LISTENING: {}'.format(colored('LISTENING', 'green') if self.server_thread_running() else colored(
-                'NOT LISTENING', 'red')), 'white'), bar)
-        print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
-        for cmd in self.valid_terminal_commands:
-            print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(cmd[0], 'white'), cmd[1], bar)
+        print ' {} {:68} {}'.format(bar, 'Imp', bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
@@ -406,6 +323,6 @@ class BluetoothController:
 
 
 if __name__ == "__main__":
-    bc = BluetoothController(Motors.MotorController.MotorController(), Sensors.SonarController.SonarController(),
-                             Sensors.GPSController.GPSController(), Sensors.CompassController.CompassController())
+    bc = BluetoothController(MotorController.MotorController(), SonarController.SonarController(),
+                             GPSController.GPSController(), CompassController.CompassController())
     bc.terminal()

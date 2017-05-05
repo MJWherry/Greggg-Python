@@ -32,9 +32,8 @@ class Driver:
 
     def __init__(self):
         os.system(self.clear)
-
         # Read in commands and settings
-        self.load_settings()
+        #self.load_settings()
 
         # Setup objects
         logging.info('(DRIVER) Creating controllers.')
@@ -43,20 +42,6 @@ class Driver:
         self.gc = GPSController.GPSController()
         self.cc = CompassController.CompassController()
         self.bc = BluetoothController.BluetoothController(self.mc, self.sc, self.gc, self.cc)
-
-        # Start the appropriate threads automatically
-        logging.info('(DRIVER) Starting threads.')
-        time.sleep(1)
-        self.sc.start_sonar_thread()
-
-        time.sleep(1)
-        self.gc.start_gps_thread()
-
-        time.sleep(1)
-        self.cc.start_compass_thread()
-
-        time.sleep(1)
-        self.bc.start_server_thread()
 
         print ' Finished, starting up in 3 seconds.'
         time.sleep(3)
@@ -86,26 +71,15 @@ class Driver:
         print ' {} {:68} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED: {}'.format(
             colored('CONNECTED', 'green') if self.bc.is_connected() else colored(
                 'DISCONNECTED', 'red')), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored('BLUETOOTH SERVER LISTENING: {}'.format(colored('LISTENING',
-                                                                                                 'green') if self.bc.server_thread_running() else colored(
-            'NOT LISTENING', 'red')), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('BLUETOOTH SERVER LISTENING: {}'.format(self.bc.thread_status()), 'white'), bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {:68} {}'.format(bar, colored(
             'MOTOR CONTROLLER: {}'.format(colored('CONNECTED', 'green') if self.mc.is_connected else colored(
                 'DISCONNECTED', 'red')), 'white'), bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:68} {}'.format(bar, colored('SONAR THREAD: {}'.format(self.sc.thread_status), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored('GPS THREAD: {}'.format(self.gc.thread_status), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored('COMPASS THREAD: {}'.format(self.cc.thread_status), 'white'), bar)
-        print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {} {:^59} {}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
-        for command in self.valid_terminal_commands:
-            if len(command[0]) is 1:
-                print ' {} \'{:^3}\' {:46} {}'.format(colored('|', 'magenta'), colored(command[0], 'white'), command[1],
-                                                      colored('|', 'magenta'))
-            else:
-                print ' {} \'{:^3}\' {:44} {}'.format(colored('|', 'magenta'), colored(command[0], 'white'), command[1],
-                                                      colored('|', 'magenta'))
+        print ' {} {:68} {}'.format(bar, colored('SONAR THREAD: {}'.format(self.sc.thread_status()), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('GPS THREAD: {}'.format(self.gc.thread_status()), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('COMPASS THREAD: {}'.format(self.cc.thread_status()), 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def parse_terminal_command(self, cmd):
@@ -113,6 +87,7 @@ class Driver:
         suffix = cmd[3:]
 
         # NEED TO FIX FOR OTHER PREFIXES
+
         # Accept/forward commands based on controller prefix
         if prefix == 'mc' or prefix == 'motorcontroller' or prefix == 'motor_controller':
             self.mc.parse_terminal_command(suffix)
@@ -147,10 +122,10 @@ class Driver:
                 self.hide_menu = True
             self.parse_terminal_command('c')
         elif cmd == 'q':
-            self.cc.stop_compass_thread()
-            self.gc.stop_gps_thread()
-            self.sc.stop_sonar_thread()
-            self.bc.stop_server_thread()
+            self.cc.stop_thread()
+            self.gc.stop_thread()
+            self.sc.stop_thread()
+            self.bc.stop_thread()
             os.system(self.clear)
             exit(0)
 

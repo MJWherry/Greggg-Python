@@ -1,13 +1,16 @@
 import logging
 import os
 import sys
-import xml.etree.ElementTree as ET
 import serial
 from termcolor import colored
+from Skeletons import SettingsManager
+import xml.etree.ElementTree as ET
 
 
 class MotorController:
     # region Variables
+
+    SM = SettingsManager.SettingsManager()
 
     # region Motor Setting Variables
     serial = None
@@ -74,7 +77,9 @@ class MotorController:
     # endregion
 
     def __init__(self):
-        self.load_settings()
+        self.SM.load_settings('motor')
+        self.serial_port = str(self.SM.get_setting_value('serial_port'))
+        self.serial_baud_rate = int(self.SM.get_setting_value('serial_baud_rate'))
         self.connect()
 
     def load_settings(self):
@@ -90,17 +95,9 @@ class MotorController:
                 for parameter in command.iter('parameter'):
                     valid_command[2].append((parameter.attrib['description'], parameter.attrib['range']))
                 self.valid_motor_commands.append(valid_command)
-        for child in device.iter('terminal_commands'):
-            for command in child.iter('command'):
-                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
-        for child in device.iter('setting'):
-            if child.attrib['name'] == 'serial_baud_rate':
-                self.serial_baud_rate = int(child.attrib['value'])
-            elif child.attrib['name'] == 'serial_port':
-                self.serial_port = child.attrib['value']
-
-    def save_settings(self):
-        None
+        #for child in device.iter('terminal_commands'):
+        #    for command in child.iter('command'):
+        #        self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()
@@ -133,13 +130,6 @@ class MotorController:
             colored('CONNECTED', 'green') if self.is_connected() else colored('DISCONNECTED', 'red')), 'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('PORT: {}'.format(self.serial_port[:41]) + '...', 'white'), bar)
         print ' {} {:59} {}'.format(bar, colored('BAUD RATE: {}'.format(self.serial_baud_rate), 'white'), bar)
-        print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
-        print ' {}{:^61}{}'.format(bar, colored('TERMINAL COMMANDS', 'white'), bar)
-        for command in self.valid_terminal_commands:
-            if len(command[0]) is 1:
-                print ' {} \'{:^3}\' {:46} {}'.format(bar, colored(command[0], 'white'), command[1], bar)
-            else:
-                print ' {} \'{:^3}\' {:44} {}'.format(bar, colored(command[0], 'white'), command[1], bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
