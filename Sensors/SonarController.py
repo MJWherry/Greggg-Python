@@ -3,17 +3,18 @@ import os
 import sys
 import time
 import RPi.GPIO as GPIO
-from Skeletons import SettingsManager
+from Utilities.SettingsManager import SettingsManager
 from termcolor import colored
-from Skeletons import SleepableThread
-
-logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
+from Utilities.SleepableThread import SleepableThread
 
 
-class SonarController(SleepableThread.SleepableThread):
+class SonarController(SleepableThread):
     # region Variables
 
-    SC = SettingsManager.SettingsManager()
+    SC = SettingsManager(settings_name='sonar', file_path='../config.xml')
+    log_name = '../Logs/{}-run.log'.format(time.strftime("%Y-%m-%d %H-%M"))
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s')
 
     # region GPIO Pin Numbers
     front_left_sonar_pin = 37
@@ -103,7 +104,6 @@ class SonarController(SleepableThread.SleepableThread):
     # endregion
 
     def __init__(self):
-        self.SC.load_settings('sonar')
         self.update_time_interval = float(self.SC.get_setting_value('update_time_interval'))
         self.front_left_sonar_pin = int(self.SC.get_setting_value('front_left_sonar_pin'))
         self.front_middle_sonar_pin = int(self.SC.get_setting_value('front_middle_sonar_pin'))

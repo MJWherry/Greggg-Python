@@ -3,22 +3,23 @@ import os
 import sys
 import time
 import bluetooth
-from Skeletons import SettingsManager
-from Skeletons import SleepableThread
-from Motors import MotorController
-from Sensors import CompassController
-from Sensors import GPSController
-from Sensors import SonarController
+from Utilities.SettingsManager import SettingsManager
+from Utilities.SleepableThread import SleepableThread
+from Motors.MotorController import MotorController
+from Sensors.CompassController import CompassController
+from Sensors.GPSController import GPSController
+from Sensors.SonarController import SonarController
 from termcolor import colored
 
-logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
 
-
-class BluetoothController(SleepableThread.SleepableThread):
+class BluetoothController(SleepableThread):
     # region Variables
 
-    SM = SettingsManager.SettingsManager()
+    SM = SettingsManager(settings_name='bluetooth', file_path='../config.xml')
 
+    log_name = '../Logs/{}-run.log'.format(time.strftime("%Y-%m-%d %H-%M"))
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s')
     # region Bluetooth Variables
     server_sock_in = None
     server_sock_out = None
@@ -42,26 +43,26 @@ class BluetoothController(SleepableThread.SleepableThread):
     # endregion
 
     # region Controller Variables
-    try:
-        mc = MotorController
-        logging.info('(BLUETOOTH) Set mc to MotorController instance.')
-    except:
-        logging.error('(BLUETOOTH) Couldn\'t set mc to MotorController instance.')
-    try:
-        sc = SonarController.SonarController
-        logging.info('(BLUETOOTH) Set sc to SonarController instance.')
-    except:
-        logging.error('(BLUETOOTH) Couldn\'t set sc to SonarController instance.')
-    try:
-        gc = GPSController.GPSController
-        logging.info('(BLUETOOTH) Set gc to GPSController instance.')
-    except:
-        logging.error('(BLUETOOTH) Couldn\'t set gc to GPSController instance.')
-    try:
-        cc = CompassController
-        logging.info('(BLUETOOTH) Set cc to CompassController instance.')
-    except:
-        logging.error('(BLUETOOTH) Couldn\'t set cc to CompassController instance.')
+    # try:
+    #     mc = MotorController
+    #     logging.info('(BLUETOOTH) Set mc to MotorController instance.')
+    # except:
+    #     logging.error('(BLUETOOTH) Couldn\'t set mc to MotorController instance.')
+    # try:
+    #     sc = SonarController
+    #     logging.info('(BLUETOOTH) Set sc to SonarController instance.')
+    # except:
+    #     logging.error('(BLUETOOTH) Couldn\'t set sc to SonarController instance.')
+    # try:
+    #     gc = GPSController
+    #     logging.info('(BLUETOOTH) Set gc to GPSController instance.')
+    # except:
+    #     logging.error('(BLUETOOTH) Couldn\'t set gc to GPSController instance.')
+    # try:
+    #     cc = CompassController
+    #     logging.info('(BLUETOOTH) Set cc to CompassController instance.')
+    # except:
+    #     logging.error('(BLUETOOTH) Couldn\'t set cc to CompassController instance.')
     # endregion
 
     # region ETC Variables
@@ -76,7 +77,9 @@ class BluetoothController(SleepableThread.SleepableThread):
 
     # region Server Functions
     def is_connected(self):
-        return False if self.client_address_in == '' and self.client_address_out == '' else True
+        if self.client_address_in == '' and self.client_address_out == '':
+            return colored('DISCONNECTED','red')
+        return colored('CONNECTED', 'green')
 
     def sockets_created_and_bound(self):
         return True if self.socket_in_created and self.socket_in_bound and self.socket_out_created and self.socket_out_bound else False
@@ -216,8 +219,15 @@ class BluetoothController(SleepableThread.SleepableThread):
 
     # endregion
 
-    def __init__(self, motor, sonar, gps, compass):
-        self.SM.load_settings('bluetooth')
+    def __init__(self, motor=MotorController(), sonar=SonarController(), gps=GPSController(), compass=CompassController()):
+        self.apply_settings()
+        self.mc = motor
+        self.sc = sonar
+        self.gc = gps
+        self.cc = compass
+        super(BluetoothController, self).__init__()
+
+    def apply_settings(self):
         self.server_in_port = int(self.SM.get_setting_value('server_in_port'))
         self.server_out_port = int(self.SM.get_setting_value('server_out_port'))
         self.server_backlog = int(self.SM.get_setting_value('server_backlog'))
@@ -225,11 +235,6 @@ class BluetoothController(SleepableThread.SleepableThread):
         self.server_in_connection_timeout = float(self.SM.get_setting_value('server_in_connection_timeout'))
         self.server_out_connection_timeout = float(self.SM.get_setting_value('server_out_connection_timeout'))
         self.server_address = str(self.SM.get_setting_value('server_address'))
-        self.mc = motor
-        self.sc = sonar
-        self.gc = gps
-        self.cc = compass
-        super(BluetoothController, self).__init__()
 
     def parse_terminal_command(self, command):
         prefixes = ['mc', 'motorcontroller', 'motor_controller',
@@ -280,6 +285,8 @@ class BluetoothController(SleepableThread.SleepableThread):
                 self.client_sock_out.send(data)
             elif type == 'print':
                 print ' ', data
+        elif split[0] == 'thread':
+            self.parse_thread_command(split[1])
         else:
             if command == 'c':
                 os.system(self.clear)
@@ -305,10 +312,16 @@ class BluetoothController(SleepableThread.SleepableThread):
         print ' {:1}{:^61}{:1}'.format(bar, colored('SERVER TERMINAL', 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('CONNECTION INFORMATION', 'white'), bar)
-        print ' {} {:68} {}'.format(colored('|', 'magenta'), colored(
-            'SERVER CONNECTED: {}'.format(colored('CONNECTED', 'green') if self.is_connected() else colored(
-                'DISCONNECTED', 'red')), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, 'Imp', bar)
+        print ' {} {:68} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED: {}'.format(
+            self.is_connected()), 'white'), bar)
+        print ' {} {:68} {}'.format(bar,
+                                    colored('BLUETOOTH SERVER LISTENING: {}'.format(self.thread_status()), 'white'),
+                                    bar)
+        print ' {} {:33} {:34} {}'.format(bar, colored('SERVER ADDRESS: {}'.format(self.server_address), 'white'),
+                                          colored('BACKLOG: {}'.format(self.server_backlog), 'white'), bar)
+        print ' {} {:33} {:34} {}'.format(bar, colored('PORT (IN): {}'.format(self.server_in_port), 'white'),
+                                          colored('PORT (OUT): {}'.format(self.server_out_port), 'white'), bar)
+
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
 
     def terminal(self):
@@ -323,6 +336,5 @@ class BluetoothController(SleepableThread.SleepableThread):
 
 
 if __name__ == "__main__":
-    bc = BluetoothController(MotorController.MotorController(), SonarController.SonarController(),
-                             GPSController.GPSController(), CompassController.CompassController())
+    bc = BluetoothController()
     bc.terminal()

@@ -2,15 +2,19 @@ import logging
 import os
 import sys
 import serial
+import time
 from termcolor import colored
-from Skeletons import SettingsManager
+from Utilities.SettingsManager import SettingsManager
 import xml.etree.ElementTree as ET
 
 
 class MotorController:
     # region Variables
 
-    SM = SettingsManager.SettingsManager()
+    SM = SettingsManager(settings_name='motor', file_path='../config.xml')
+    log_name = '../Logs/{}-run.log'.format(time.strftime("%Y-%m-%d %H-%M"))
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s')
 
     # region Motor Setting Variables
     serial = None
@@ -77,10 +81,14 @@ class MotorController:
     # endregion
 
     def __init__(self):
-        self.SM.load_settings('motor')
-        self.serial_port = str(self.SM.get_setting_value('serial_port'))
-        self.serial_baud_rate = int(self.SM.get_setting_value('serial_baud_rate'))
+        self.apply_settings()
         self.connect()
+
+    def apply_settings(self):
+        try:self.serial_port = str(self.SM.get_setting_value('serial_port'))
+        except AttributeError: print ' Could not set setting for serial_port via the setting manager.'
+        try:self.serial_baud_rate = int(self.SM.get_setting_value('serial_baud_rate'))
+        except: print ' Could not set setting for serial_baud_rate via the setting manager.'
 
     def load_settings(self):
         try:
@@ -134,7 +142,8 @@ class MotorController:
 
     def terminal(self):
         os.system(self.clear)
-        sys.stdout.write("\x1b]2;Motor Control Terminal\x07")
+        if os.name != 'nt':
+            sys.stdout.write("\x1b]2;Motor Control Terminal\x07")
         self.print_menu()
         while not self.return_to_main_menu:
             cmd = raw_input(colored(' Enter a command: ', 'cyan'))

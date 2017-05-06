@@ -3,16 +3,18 @@ import os
 import sys
 import time
 import hmc5883l
-from Skeletons import SettingsManager
+from Utilities.SettingsManager import SettingsManager
 from termcolor import colored
-from Skeletons import SleepableThread
+from Utilities.SleepableThread import SleepableThread
 
-logging.basicConfig(filename='run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
 
-class CompassController(SleepableThread.SleepableThread):
+class CompassController(SleepableThread):
     # region Variables
 
-    SM = SettingsManager.SettingsManager()
+    SM = SettingsManager(settings_name='compass', file_path='../config.xml')
+    log_name = '../Logs/{}-run.log'.format(time.strftime("%Y-%m-%d %H-%M"))
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s')
 
     # region I2C settings
     i2c_port = 1
@@ -58,13 +60,7 @@ class CompassController(SleepableThread.SleepableThread):
     # endregion
 
     def __init__(self):
-        self.SM.load_settings('compass')
-        self.i2c_port = int(self.SM.get_setting_value('i2c_port'))
-        self.i2c_bus_address = str(self.SM.get_setting_value('i2c_bus_address'))
-        self.declination_minutes = int(self.SM.get_setting_value('declination_minutes'))
-        self.declination_degrees = int(self.SM.get_setting_value('declination_degrees'))
-        self.gauss = float(self.SM.get_setting_value('gauss'))
-        self.update_time_interval = float(self.SM.get_setting_value('update_time_interval'))
+        self.apply_settings()
         try:
             self.compass = hmc5883l.hmc5883l(gauss=self.gauss,
                                              declination=(self.declination_degrees,self.declination_minutes))
@@ -72,6 +68,14 @@ class CompassController(SleepableThread.SleepableThread):
         except:
             logging.error('(COMPASS) Couldn\'t create compass object.')
         super(CompassController, self).__init__()
+
+    def apply_settings(self):
+        self.i2c_port = int(self.SM.get_setting_value('i2c_port'))
+        self.i2c_bus_address = str(self.SM.get_setting_value('i2c_bus_address'))
+        self.declination_minutes = int(self.SM.get_setting_value('declination_minutes'))
+        self.declination_degrees = int(self.SM.get_setting_value('declination_degrees'))
+        self.gauss = float(self.SM.get_setting_value('gauss'))
+        self.update_time_interval = float(self.SM.get_setting_value('update_time_interval'))
 
     def parse_terminal_command(self, cmd):
         cmd = cmd.lower()

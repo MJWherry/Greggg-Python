@@ -1,17 +1,21 @@
 import os
 import time
 import sys
-from termcolor import colored
-import xml.etree.ElementTree as ET
-from Bluetooth import BluetoothController
-from Motors import MotorController
-from Sensors import SonarController, GPSController, CompassController
 import logging
+from termcolor import colored
+from Bluetooth.BluetoothController import BluetoothController
+from Motors.MotorController import MotorController
+from Sensors.SonarController import SonarController
+from Sensors.GPSController import GPSController
+from Sensors.CompassController import CompassController
 
-logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG, format=('%(asctime)s %(levelname)s %(message)s'))
 
 class Driver:
     # region VARIABLES
+
+    log_name = 'Logs/{}-run.log'.format(time.strftime("%Y-%m-%d %H-%M"))
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s')
 
     # region ETC VARIABLES
     valid_terminal_commands = []
@@ -33,45 +37,32 @@ class Driver:
     def __init__(self):
         os.system(self.clear)
         # Read in commands and settings
-        #self.load_settings()
+        # self.load_settings()
 
         # Setup objects
         logging.info('(DRIVER) Creating controllers.')
-        self.mc = MotorController.MotorController()
-        self.sc = SonarController.SonarController()
-        self.gc = GPSController.GPSController()
-        self.cc = CompassController.CompassController()
-        self.bc = BluetoothController.BluetoothController(self.mc, self.sc, self.gc, self.cc)
+        self.mc = MotorController()
+        self.sc = SonarController()
+        self.gc = GPSController()
+        self.cc = CompassController()
+        self.bc = BluetoothController(self.mc, self.sc, self.gc, self.cc)
 
         print ' Finished, starting up in 3 seconds.'
         time.sleep(3)
         logging.info('(DRIVER) Starting up.')
 
-    def load_settings(self):
-        logging.info('(DRIVER) Loading settings.')
-        try:
-            tree = ET.parse('/home/pi/Desktop/greggg-python/config.xml')
-        except:
-            logging.error('(DRIVER) Couldn\'t open config file.')
-            return
-        root = tree.getroot()
-        device = root.find('driver')
-        for child in device.iter('terminal_commands'):
-            for command in child.iter('command'):
-                self.valid_terminal_commands.append((command.attrib['name'], command.attrib['description']))
-        logging.info('(DRIVER) Settings loaded.')
-
     def print_menu(self):
-        if self.hide_menu: return
+        if self.hide_menu:
+            return
         bar = colored('|', 'magenta')
         print colored(' {:_^54}'.format(''), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('MAIN MENU', 'white'), bar)
         print colored(' {}{:_^52}{}'.format('|', '', '|'), 'magenta')
         print ' {}{:^61}{}'.format(bar, colored('INFORMATION', 'white'), colored('|', 'magenta'))
         print ' {} {:68} {}'.format(colored('|', 'magenta'), colored('BLUETOOTH SERVER CONNECTED: {}'.format(
-            colored('CONNECTED', 'green') if self.bc.is_connected() else colored(
-                'DISCONNECTED', 'red')), 'white'), bar)
-        print ' {} {:68} {}'.format(bar, colored('BLUETOOTH SERVER LISTENING: {}'.format(self.bc.thread_status()), 'white'), bar)
+            self.bc.is_connected()), 'white'), bar)
+        print ' {} {:68} {}'.format(bar, colored('BLUETOOTH SERVER LISTENING: {}'.format(self.bc.thread_status()),
+                                                 'white'), bar)
         print colored(' {}{:52}{}'.format('|', '', '|'), 'magenta')
         print ' {} {:68} {}'.format(bar, colored(
             'MOTOR CONTROLLER: {}'.format(colored('CONNECTED', 'green') if self.mc.is_connected else colored(

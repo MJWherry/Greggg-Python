@@ -5,18 +5,19 @@ import time
 import pynmea2
 import serial
 from termcolor import colored
-from Skeletons import SleepableThread
-from Skeletons import SettingsManager
-
-logging.basicConfig(filename='/home/pi/Desktop/greggg-python/run.log', level=logging.DEBUG,
-                    format=('%(asctime)s %(levelname)s %(message)s'))
+from Utilities.SleepableThread import SleepableThread
+from Utilities.SettingsManager import SettingsManager
 
 
-class GPSController(SleepableThread.SleepableThread):
+class GPSController(SleepableThread):
     # REFERENCE: http://aprs.gids.nl/nmea/
 
     # region Variables
-    settings = SettingsManager.SettingsManager()
+
+    SM = SettingsManager(settings_name='gps', file_path='../config.xml')
+    log_name = '../Logs/{}-run.log'.format(time.strftime("%Y-%m-%d %H-%M"))
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(message)s')
 
     # region Setting variables
     serial_stream = None
@@ -95,9 +96,8 @@ class GPSController(SleepableThread.SleepableThread):
     # endregion
 
     def __init__(self):
-        self.settings.load_settings('gps')
-        self.serial_port = self.settings.get_setting_value('serial_port')
-        self.serial_baud_rate = int(self.settings.get_setting_value('serial_baud_rate'))
+        self.serial_port = self.SM.get_setting_value('serial_port')
+        self.serial_baud_rate = int(self.SM.get_setting_value('serial_baud_rate'))
         try:
             self.serial_stream = serial.Serial(self.serial_port, self.serial_baud_rate)
             logging.info('(GPS) Serial object created')
